@@ -2,24 +2,25 @@ name: Auto Deploy to Server
 
 on:
   push:
-    branches: [ master ]
+    branches: [master]
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    
+
     steps:
-    - name: Deploy to server
-      uses: appleboy/ssh-action@v0.1.8
-      with:
-        host: leovidal.es
-        username: leovidal
-        port: 17177
-        key: ${{ secrets.SSH_PRIVATE_KEY }}
-        script: |
-          cd /home/leovidal/repositories/daily-calendar
-          git pull origin master
-          npm install
-          npm run build
-          cd server
-          npm install
+      - name: Deploy to server
+        uses: appleboy/ssh-action@v0.1.8
+        with:
+          host: leovidal.es
+          username: leovidal
+          port: 17177
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          passphrase: ${{ secrets.SSH_PASSPHRASE }}
+          script: |
+            cd /home/leovidal/repositories/daily-calendar
+            git pull origin master
+            npm install
+            npm run build
+            cd server
+            npm install
