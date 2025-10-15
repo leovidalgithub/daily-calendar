@@ -20,7 +20,4 @@ jobs:
           script: |
             cd /home/leovidal/repositories/daily-calendar
             git pull origin master
-            npm install
             npm run build
-            cd server
-            npm install
