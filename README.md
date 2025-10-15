@@ -14,11 +14,13 @@ Una aplicación web para guardar y organizar notas diarias con calendario intera
 ## 🛠️ Tecnologías
 
 ### Frontend
+
 - **React 19** con Vite
 - **CSS Modules** para estilos
 - **React Calendar** para el componente de calendario
 
 ### Backend
+
 - **Node.js** con Express
 - **MySQL 8** como base de datos
 - **CORS** habilitado para desarrollo
@@ -26,17 +28,20 @@ Una aplicación web para guardar y organizar notas diarias con calendario intera
 ## 🚀 Instalación y Uso
 
 ### Prerrequisitos
+
 - Node.js 18+
 - MySQL 8
 - npm o yarn
 
 ### 1. Clonar el repositorio
+
 ```bash
 git clone https://github.com/tu-usuario/daily-calendar.git
 cd daily-calendar
 ```
 
 ### 2. Instalar dependencias
+
 ```bash
 # Instalar dependencias del frontend
 npm install
@@ -47,6 +52,7 @@ npm install
 ```
 
 ### 3. Configurar base de datos
+
 1. Crear base de datos en MySQL
 2. Ejecutar el script `server/database.sql`
 3. Configurar archivo `.env` en el directorio `server/`:
@@ -61,12 +67,13 @@ PORT=3001
 ```
 
 ### 4. Ejecutar la aplicación
+
 ```bash
 # En una terminal - Backend
 cd server
 npm start
 
-# En otra terminal - Frontend  
+# En otra terminal - Frontend
 cd ..
 npm run dev
 ```
@@ -91,11 +98,13 @@ daily-calendar/
 ## 🌐 Deployment
 
 ### Frontend (Vercel/Netlify)
+
 ```bash
 npm run build
 ```
 
 ### Backend (Railway/Heroku)
+
 Subir la carpeta `server/` con las variables de entorno configuradas.
 
 ## 📝 Uso
