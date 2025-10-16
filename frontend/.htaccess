@@ -1,0 +1,14 @@
+# Test .htaccess file
+RewriteEngine On
+
+# Handle React Router - send all non-file requests to index.html
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteCond %{REQUEST_URI} !^/api/
+RewriteRule . /index.html [L]
+
+# For debugging - show server info
+# Remove this after testing
+<IfModule mod_headers.c>
+    Header set X-Server-Type "Apache"
+</IfModule>
