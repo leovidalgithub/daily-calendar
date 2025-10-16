@@ -27,7 +27,25 @@ jobs:
           passphrase: ${{ secrets.SSH_PASSPHRASE }}
           script: |
             cd /home/leovidal/repositories/daily-calendar
+
+            # Cargar nvm si está disponible
+            export NVM_DIR="$HOME/.nvm"
+            [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+
+            # Intentar usar Node.js 20 o superior
+            if command -v nvm &> /dev/null; then
+              nvm use 20 || nvm use 22 || nvm install 20
+            fi
+
+            # Verificar versión de Node
+            node --version
+
+            # Actualizar repositorio
             git pull origin master
+
+            # Limpiar e instalar dependencias
             rm -rf node_modules package-lock.json
             npm install
+
+            # Build
             npm run build
