@@ -17,13 +17,17 @@ jobs:
         with:
           node-version: "22.12.0"
 
-      - name: Install dependencies
-        run: npm install
+      - name: Install frontend dependencies
+        run: |
+          cd frontend
+          npm install
 
       - name: Build frontend
-        run: npm run build
+        run: |
+          cd frontend
+          npm run build
 
-      - name: Deploy to server
+      - name: Deploy frontend to server
         uses: appleboy/scp-action@v0.1.7
         with:
           host: leovidal.es
@@ -31,11 +35,23 @@ jobs:
           port: 17177
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           passphrase: ${{ secrets.SSH_PASSPHRASE }}
-          source: "dist/"
-          target: "/home/leovidal/repositories/daily-calendar/"
-          strip_components: 0
+          source: "frontend/dist/*"
+          target: "/home/leovidal/repositories/daily-calendar/dist/"
+          strip_components: 2
 
-      - name: Update server files
+      - name: Deploy backend to server
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: leovidal.es
+          username: leovidal
+          port: 17177
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          passphrase: ${{ secrets.SSH_PASSPHRASE }}
+          source: "backend/*"
+          target: "/home/leovidal/repositories/daily-calendar/"
+          strip_components: 1
+
+      - name: Install backend dependencies and restart
         uses: appleboy/ssh-action@v0.1.8
         with:
           host: leovidal.es
@@ -45,4 +61,7 @@ jobs:
           passphrase: ${{ secrets.SSH_PASSPHRASE }}
           script: |
             cd /home/leovidal/repositories/daily-calendar
-            git pull origin master
+            # Install backend dependencies if package.json changed
+            npm install
+            # Restart Node.js application if needed
+            # pm2 restart daily-calendar || true
