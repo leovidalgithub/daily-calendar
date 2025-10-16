@@ -39,7 +39,7 @@ jobs:
           target: "/home/leovidal/repositories/daily-calendar/dist/"
           strip_components: 2
 
-      - name: Deploy backend to server
+      - name: Deploy backend to API subdomain
         uses: appleboy/scp-action@v0.1.7
         with:
           host: leovidal.es

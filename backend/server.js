@@ -6,11 +6,14 @@ import dotenv from "dotenv";
 dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT || 3000;
 
 // Middleware
 const corsOptions = {
-  origin: process.env.FRONTEND_URL || "http://localhost:5173",
+  origin: [
+    "https://daily-calendar.leovidal.es",
+    "http://localhost:5173"
+  ],
   credentials: true,
 };
 app.use(cors(corsOptions));

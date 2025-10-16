@@ -4,8 +4,8 @@ import SimpleRichEditor from "./components/SimpleRichEditor";
 import "./App.css";
 
 const API_BASE_URL = import.meta.env.PROD
-  ? "https://daily-calendar.leovidal.es/api"
-  : "http://localhost:3001/api";
+  ? "https://api-daily-calendar.leovidal.es/api"
+  : "http://localhost:3000/api";
 
 // Función para obtener fecha en formato YYYY-MM-DD sin problemas de zona horaria
 const getLocalDateString = (date) => {
