@@ -15,7 +15,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "20.19"
+          node-version: "20.19.0"
 
       - name: Deploy to server
         uses: appleboy/ssh-action@v0.1.8
@@ -28,4 +28,6 @@ jobs:
           script: |
             cd /home/leovidal/repositories/daily-calendar
             git pull origin master
+            rm -rf node_modules package-lock.json
+            npm install
             npm run build
