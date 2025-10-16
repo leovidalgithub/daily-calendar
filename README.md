@@ -1,6 +1,6 @@
 # 📅 Calendario Personal
 
-Una aplicación web para guardar y organizar notas diarias con calendario interactivo.
+Una aplicación web para guardar y organizar notas diarias con calendario interactivo..
 
 ## 🌟 Características
 
