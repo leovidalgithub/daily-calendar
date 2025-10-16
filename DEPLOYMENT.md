@@ -92,7 +92,7 @@ npm start
 
 ## 🔧 Troubleshooting
 
-### Problemas comunes:
+### Problemas comunes::
 
 - **CORS Error**: Verificar FRONTEND_URL en .env
 - **API no responde**: Verificar que Node.js esté ejecutándose
