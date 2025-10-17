@@ -64,4 +64,4 @@ jobs:
             # Install backend dependencies if package.json changed
             npm install
             # Restart Node.js application if needed
-            # pm2 restart daily-calendar || true
+            pm2 restart daily-calendar || true
