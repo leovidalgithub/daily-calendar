@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import CalendarComponent from "./components/Calendar";
 import SimpleRichEditor from "./components/SimpleRichEditor";
+import StructuredEntryForm from "./components/StructuredEntryForm";
 import "./App.css";
 
 const API_BASE_URL = import.meta.env.PROD
@@ -18,6 +19,8 @@ const getLocalDateString = (date) => {
 function App() {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [content, setContent] = useState("");
+  const [structuredEntries, setStructuredEntries] = useState([]);
+  const [entryType, setEntryType] = useState("structured"); // "text" | "structured" - por defecto estructurado
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -37,16 +40,33 @@ function App() {
       if (response.ok) {
         const data = await response.json();
         setContent(data.content || "");
+        
+        // Manejar datos estructurados correctamente
+        const structuredData = data.structured_entries || null;
+        setStructuredEntries(structuredData);
+        
+        // Mantener el modo estructurado por defecto, solo cambiar si explícitamente es texto
+        if (data.entry_type === "text" && data.content && !structuredData) {
+          setEntryType("text");
+        } else {
+          setEntryType("structured");
+        }
       } else if (response.status === 404) {
-        // No hay contenido para esta fecha, está bien
+        // No hay contenido para esta fecha, mantener modo estructurado
         setContent("");
+        setStructuredEntries(null);
+        setEntryType("structured");
       } else {
         console.error("Error loading content:", response.statusText);
         setContent("");
+        setStructuredEntries(null);
+        setEntryType("structured");
       }
     } catch (error) {
       console.error("Error connecting to server:", error);
       setContent("");
+      setStructuredEntries(null);
+      setEntryType("structured"); // Mantener estructurado por defecto
     } finally {
       setIsLoading(false);
     }
@@ -65,7 +85,9 @@ function App() {
         },
         body: JSON.stringify({
           date: dateString,
-          content: content,
+          content: entryType === "text" ? content : null,
+          structuredEntries: entryType === "structured" ? structuredEntries : null,
+          entryType: entryType,
         }),
       });
 
@@ -83,6 +105,38 @@ function App() {
     }
   };
 
+  // Manejar guardado de entradas estructuradas
+  const handleStructuredSave = async (structuredData) => {
+    if (!selectedDate) return;
+
+    setIsSaving(true);
+    try {
+      const dateString = getLocalDateString(selectedDate);
+      const response = await fetch(`${API_BASE_URL}/entry`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          date: dateString,
+          content: null,
+          structuredEntries: structuredData,
+          entryType: "structured",
+        }),
+      });
+
+      if (response.ok) {
+        setStructuredEntries(structuredData);
+      } else {
+        console.error("Error saving structured content:", response.statusText);
+      }
+    } catch (error) {
+      console.error("Error connecting to server:", error);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   const handleDateChange = (date) => {
     setSelectedDate(date);
   };
@@ -93,30 +147,53 @@ function App() {
 
   return (
     <div className="app">
-      <header className="app-header">
-        <h1>📅 Calendario Personal</h1>
-        <p>Selecciona una fecha y guarda tus notas del día</p>
-      </header>
-
       <main className="app-main">
         <div className="app-grid">
-          <div className="calendar-section">
-            <CalendarComponent
-              selectedDate={selectedDate}
-              onDateChange={handleDateChange}
-            />
+          <div className="left-panel">
+            <header className="app-header">
+              <h1>📅 Calendario Personal</h1>
+              <p>Selecciona una fecha y guarda tus notas del día</p>
+            </header>
+
+            <div className="editor-header">
+              <button 
+                className={`mode-toggle ${entryType === "text" ? "active" : ""}`}
+                onClick={() => setEntryType("text")}
+              >
+                📝 Texto Libre
+              </button>
+              <button 
+                className={`mode-toggle ${entryType === "structured" ? "active" : ""}`}
+                onClick={() => setEntryType("structured")}
+              >
+                📋 Entradas Estructuradas
+              </button>
+            </div>
+
+            <div className="calendar-section">
+              <CalendarComponent
+                selectedDate={selectedDate}
+                onDateChange={handleDateChange}
+              />
+            </div>
           </div>
 
-          <div className="editor-section">
+          <div className="right-panel">
             {isLoading ? (
               <div className="loading">Cargando...</div>
-            ) : (
+            ) : entryType === "text" ? (
               <SimpleRichEditor
                 selectedDate={selectedDate}
                 content={content}
                 onContentChange={handleContentChange}
                 onSave={saveContent}
                 isSaving={isSaving}
+              />
+            ) : (
+              <StructuredEntryForm
+                selectedDate={selectedDate}
+                onSave={handleStructuredSave}
+                existingData={structuredEntries}
               />
             )}
           </div>
