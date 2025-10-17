@@ -2,6 +2,7 @@ import express from "express";
 import mysql from "mysql2/promise";
 import cors from "cors";
 import dotenv from "dotenv";
+import moment from "moment";
 
 dotenv.config();
 
@@ -197,19 +198,38 @@ app.get("/api/entries", checkDatabaseConnection, async (req, res) => {
 
 // Health check endpoint
 app.get("/api/health", (req, res) => {
+  console.log('/api/health endpoint called');
   res.json({
     status: "OK",
     timestamp: new Date().toISOString(),
+    formattedTime: moment().format('YYYY-MM-DD HH:mm:ss'),
     database: db ? "connected" : "disconnected",
+    npmPackageTest: "moment.js working correctly"
+  });
+});
+
+// Debug endpoint
+app.get("/", (req, res) => {
+  res.json({
+    message: "Daily Calendar API is running",
+    timestamp: new Date().toISOString(),
+    port: PORT
   });
 });
 
 // Inicializar base de datos y servidor
+console.log("🔄 Starting server initialization...");
+console.log("📍 Current working directory:", process.cwd());
+console.log("📍 Environment:", process.env.NODE_ENV);
+console.log("📍 Port:", PORT);
+
 initDatabase().then(() => {
   app.listen(PORT, () => {
     console.log(`🚀 Server running on http://localhost:${PORT}`);
     console.log(`📊 API endpoints available at http://localhost:${PORT}/api`);
   });
+}).catch((error) => {
+  console.error("❌ Failed to start server:", error);
 });
 
 // Manejar cierre graceful
