@@ -61,7 +61,9 @@ jobs:
           passphrase: ${{ secrets.SSH_PASSPHRASE }}
           script: |
             cd /home/leovidal/repositories/daily-calendar
-            # Install backend dependencies if package.json changed
+            # Install backend dependencies
             npm install
-            # Restart Node.js application if needed
-            pm2 restart daily-calendar || true
+            # Restart Node.js application (Cloudlinux Passenger)
+            # Touch restart.txt to trigger Passenger restart
+            touch tmp/restart.txt || mkdir -p tmp && touch tmp/restart.txt
+            echo "Node.js app restart triggered"

@@ -204,7 +204,8 @@ app.get("/api/health", (req, res) => {
     timestamp: new Date().toISOString(),
     formattedTime: moment().format('YYYY-MM-DD HH:mm:ss'),
     database: db ? "connected" : "disconnected",
-    npmPackageTest: "moment.js working correctly"
+    npmPackageTest: "moment.js working correctly",
+    nodeAppRestatus: "operational"
   });
 });
 
