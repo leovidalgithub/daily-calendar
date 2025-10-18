@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Meeting, Task, Note, DayEntry } from '../models/EntryModels.js';
 import styles from '../styles/StructuredEntry.module.css';
 import DurationSelect from './DurationSelect.jsx';
+import TaskIndicators from './TaskIndicators.jsx';
+import * as TaskAnalytics from '../utils/taskAnalytics.js';
 
 const StructuredEntryForm = ({ selectedDate, onSave, existingData = null }) => {
   const [dayEntry, setDayEntry] = useState(new DayEntry(selectedDate));
@@ -29,6 +31,10 @@ const StructuredEntryForm = ({ selectedDate, onSave, existingData = null }) => {
   const [editTaskErrors, setEditTaskErrors] = useState({});
   const [editNoteErrors, setEditNoteErrors] = useState({});
 
+  // Estado para estadísticas de tasks
+  const [taskAnalytics, setTaskAnalytics] = useState({});
+  const [loadingAnalytics, setLoadingAnalytics] = useState(false);
+
   // Cargar datos existentes cuando cambien
   useEffect(() => {
     if (existingData) {
@@ -38,6 +44,35 @@ const StructuredEntryForm = ({ selectedDate, onSave, existingData = null }) => {
       setDayEntry(new DayEntry(selectedDate));
     }
   }, [selectedDate, existingData]);
+
+  // Cargar estadísticas de tasks cuando cambien las tasks
+  useEffect(() => {
+    const loadTaskAnalytics = async () => {
+      if (dayEntry.tasks.length === 0) {
+        setTaskAnalytics({});
+        return;
+      }
+
+      setLoadingAnalytics(true);
+      try {
+        const taskIds = dayEntry.tasks.map(task => task.taskId).filter(id => id);
+        
+        if (taskIds.length > 0) {
+          const analytics = await TaskAnalytics.getMultipleTaskAnalytics(taskIds);
+          setTaskAnalytics(analytics);
+        } else {
+          setTaskAnalytics({});
+        }
+      } catch (error) {
+        console.error('Error loading task analytics:', error);
+        setTaskAnalytics({});
+      } finally {
+        setLoadingAnalytics(false);
+      }
+    };
+
+    loadTaskAnalytics();
+  }, [dayEntry.tasks]);
 
   // Funciones de validación
   const validateMeeting = (meeting) => {
@@ -261,16 +296,10 @@ const StructuredEntryForm = ({ selectedDate, onSave, existingData = null }) => {
       {/* Header con fecha */}
       <div className={styles.header}>
         <h2>{formatDate(selectedDate)}</h2>
-        <div className={styles.summary}>
-          <span>Meetings: {dayEntry.getFormattedMeetingTime()}</span>
-          <span>Tasks: {dayEntry.getFormattedTaskTime()}</span>
-          <span>Total: {dayEntry.getFormattedTotalTime()}</span>
-          <span>Notes: {dayEntry.notes.length}</span>
-        </div>
       </div>
 
       {/* Sección de Meetings */}
-      <div className={styles.section}>
+      <div className={dayEntry.meetings.length === 0 ? styles.sectionEmpty : styles.section}>
         <div className={styles.sectionHeader}>
           <h3>📅 Meetings & Calls</h3>
           <button 
@@ -402,7 +431,7 @@ const StructuredEntryForm = ({ selectedDate, onSave, existingData = null }) => {
       </div>
 
       {/* Sección de Tasks */}
-      <div className={styles.section}>
+      <div className={dayEntry.tasks.length === 0 ? styles.sectionEmpty : styles.section}>
         <div className={styles.sectionHeader}>
           <h3>⚡ Tasks</h3>
           <button 
@@ -547,6 +576,17 @@ const StructuredEntryForm = ({ selectedDate, onSave, existingData = null }) => {
                 <>
                   <div className={styles.entryHeader}>
                     <span className={styles.entryTitle}>#{task.taskId}</span>
+                    {/* Task Analytics Indicators */}
+                    {(() => {
+                      const analytics = taskAnalytics[task.taskId];
+                      const processedStats = analytics ? TaskAnalytics.processTaskStatsForDisplay(analytics, selectedDate) : null;
+                      
+                      return analytics && (
+                        <TaskIndicators 
+                          taskStats={processedStats}
+                        />
+                      );
+                    })()}
                     <span className={styles.department}>{task.department}</span>
                     {task.duration && (
                       <span className={styles.duration}>
@@ -578,7 +618,7 @@ const StructuredEntryForm = ({ selectedDate, onSave, existingData = null }) => {
       </div>
 
       {/* Sección de Notas Generales */}
-      <div className={styles.section}>
+      <div className={dayEntry.notes.length === 0 ? styles.sectionEmpty : styles.section}>
         <div className={styles.sectionHeader}>
           <h3>📝 Notes</h3>
           <button 

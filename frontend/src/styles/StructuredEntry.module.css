@@ -490,3 +490,33 @@
   outline: none;
   box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.5);
 }
+
+/* Estilos para secciones vacías (grayed-out) */
+.sectionEmpty {
+  margin-bottom: 15px;
+  background: #f5f5f5;
+  border-radius: 8px;
+  padding: 15px 20px;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+  opacity: 0.6;
+  transition: opacity 0.3s ease;
+}
+
+.sectionEmpty:hover {
+  opacity: 0.8;
+}
+
+.sectionEmpty .sectionHeader h3 {
+  color: #999;
+}
+
+/* Los botones Add mantienen su color verde normal */
+.sectionEmpty .addButton {
+  background: #4CAF50;
+  opacity: 1;
+}
+
+.sectionEmpty .addButton:hover {
+  background: #45a049;
+  opacity: 1;
+}

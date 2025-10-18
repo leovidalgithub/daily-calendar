@@ -112,6 +112,7 @@ function App() {
     setIsSaving(true);
     try {
       const dateString = getLocalDateString(selectedDate);
+      
       const response = await fetch(`${API_BASE_URL}/entry`, {
         method: "POST",
         headers: {

@@ -111,12 +111,6 @@ app.get("/api/entry/:date", checkDatabaseConnection, async (req, res) => {
       [date]
     );
 
-    console.log("GET /api/entry - Found rows:", rows.length);
-    if (rows.length > 0) {
-      console.log("  Raw structured_entries from DB:", rows[0].structured_entries);
-      console.log("  Type of structured_entries:", typeof rows[0].structured_entries);
-    }
-
     if (rows.length === 0) {
       return res.status(404).json({ message: "No entry found for this date" });
     }
@@ -148,14 +142,6 @@ app.post("/api/entry", checkDatabaseConnection, async (req, res) => {
   try {
     const { date, content, structuredEntries, entryType } = req.body;
 
-    console.log("POST /api/entry - Received data:");
-    console.log("  Date:", date);
-    console.log("  Content:", content);
-    console.log("  StructuredEntries:", structuredEntries);
-    console.log("  StructuredEntries type:", typeof structuredEntries);
-    console.log("  EntryType:", entryType);
-
-    // Validaciones
     if (!date) {
       return res.status(400).json({ error: "Date is required" });
     }
@@ -173,11 +159,8 @@ app.post("/api/entry", checkDatabaseConnection, async (req, res) => {
     // Determinar el tipo de entrada
     const type = entryType || (structuredEntries ? 'structured' : 'text');
 
-    // Convertir structuredEntries a JSON string si existe
     const structuredEntriesJSON = structuredEntries ? JSON.stringify(structuredEntries) : null;
-    console.log("  Converting to JSON:", structuredEntriesJSON);
 
-    // Usar INSERT ... ON DUPLICATE KEY UPDATE para manejar creación y actualización
     const query = "INSERT INTO daily_entries (entry_date, content, structured_entries, entry_type) VALUES (?, ?, ?, ?) ON DUPLICATE KEY UPDATE content = VALUES(content), structured_entries = VALUES(structured_entries), entry_type = VALUES(entry_type), updated_at = CURRENT_TIMESTAMP";
 
     const [result] = await db.execute(query, [
@@ -187,15 +170,10 @@ app.post("/api/entry", checkDatabaseConnection, async (req, res) => {
       type
     ]);
 
-    console.log("  Insert/Update result:", result);
-
-    // Obtener la entrada actualizada
     const [rows] = await db.execute(
       "SELECT * FROM daily_entries WHERE entry_date = ?",
       [date]
     );
-
-    console.log("  Retrieved after save - structured_entries:", rows[0].structured_entries);
     console.log("  Retrieved after save - type:", typeof rows[0].structured_entries);
 
     res.json({
@@ -245,6 +223,125 @@ app.get("/api/entries", checkDatabaseConnection, async (req, res) => {
     res.status(500).json({ error: "Internal server error" });
   }
 });
+
+// Task analytics endpoint - obtener estadísticas de un Task ID específico
+app.get("/api/task-analytics/:taskId", checkDatabaseConnection, async (req, res) => {
+  try {
+    const { taskId } = req.params;
+    
+    if (!taskId) {
+      return res.status(400).json({ error: "Task ID is required" });
+    }
+
+    const [rows] = await db.execute("SELECT DATE(entry_date) as entry_date_string, entry_date, content, structured_entries FROM daily_entries ORDER BY entry_date ASC");
+    
+    let allTaskOccurrences = [];
+    let totalDurationMinutes = 0;
+    
+    rows.forEach(row => {
+      try {
+        const dateString = row.entry_date_string;
+        let rawData = row.structured_entries || row.content;
+        
+        if (!rawData || (typeof rawData === 'string' && rawData.trim() === '')) {
+          return;
+        }
+
+        let content;
+        try {
+          content = typeof rawData === 'string' ? JSON.parse(rawData) : rawData;
+        } catch (jsonError) {
+          return;
+        }
+
+        if (!content || typeof content !== 'object' || !content.tasks || !Array.isArray(content.tasks)) {
+          return;
+        }
+
+        content.tasks.forEach((task, index) => {
+          if (task && task.taskId === taskId) {
+            let durationMinutes = 0;
+            if (task.duration) {
+              durationMinutes = parseDurationToMinutes(task.duration);
+              totalDurationMinutes += durationMinutes;
+            }
+            
+            allTaskOccurrences.push({
+              date: dateString,
+              taskIndex: index,
+              duration: task.duration || '',
+              durationMinutes: durationMinutes,
+              department: task.department || '',
+              status: task.status || '',
+              description: task.description || '',
+              timeSubmitted: task.timeSubmitted || false
+            });
+          }
+        });
+        
+      } catch (parseError) {
+        console.error(`Error processing ${dateString}:`, parseError.message);
+      }
+    });
+
+    // Ordenar por fecha para obtener orden cronológico
+    allTaskOccurrences.sort((a, b) => new Date(a.date) - new Date(b.date));
+    
+    const totalDurationFormatted = formatMinutesToDuration(totalDurationMinutes);
+
+    res.json({
+      taskId,
+      totalOccurrences: allTaskOccurrences.length,
+      totalDuration: totalDurationFormatted,
+      totalDurationMinutes,
+      isUnique: allTaskOccurrences.length === 1,
+      occurrences: allTaskOccurrences.map((occurrence, index) => ({
+        ...occurrence,
+        chronologicalOrder: index + 1,
+        orderDisplay: `${index + 1}/${allTaskOccurrences.length}`
+      })),
+      dates: [...new Set(allTaskOccurrences.map(occ => occ.date))]
+    });
+    
+  } catch (error) {
+    console.error("Error getting task analytics:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+function parseDurationToMinutes(durationStr) {
+  if (!durationStr) return 0;
+  
+  let totalMinutes = 0;
+  
+  // Match hours (e.g., "2h", "1h")
+  const hoursMatch = durationStr.match(/(\d+)h/);
+  if (hoursMatch) {
+    totalMinutes += parseInt(hoursMatch[1]) * 60;
+  }
+  
+  const minutesMatch = durationStr.match(/(\d+)m/);
+  if (minutesMatch) {
+    totalMinutes += parseInt(minutesMatch[1]);
+  }
+  
+  return totalMinutes;
+}
+
+function formatMinutesToDuration(totalMinutes) {
+  if (totalMinutes === 0) return '';
+  
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  
+  if (hours === 0) {
+    return `${minutes}m`;
+  } else if (minutes === 0) {
+    return `${hours}h`;
+  } else {
+    return `${hours}h${minutes}m`;
+  }
+}
 
 // Health check endpoint
 app.get("/api/health", (req, res) => {
