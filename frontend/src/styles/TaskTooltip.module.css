@@ -1,0 +1,109 @@
+/* Estilos para TaskTooltip */
+
+.tooltip {
+  position: fixed;
+  z-index: 99999;
+  background: rgba(0, 0, 0, 0.9);
+  color: white;
+  border-radius: 8px;
+  padding: 12px;
+  font-size: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  min-width: 220px;
+  max-width: 300px;
+  animation: fadeIn 0.4s ease-in-out;
+  pointer-events: none;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.tooltipHeader {
+  margin-bottom: 8px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+  font-size: 12px;
+  color: #e3f2fd;
+}
+
+.tooltipBody {
+  margin-bottom: 8px;
+}
+
+.occurrenceRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+  padding: 2px 0;
+}
+
+.occurrenceRow:last-child {
+  margin-bottom: 0;
+}
+
+.date {
+  flex: 1;
+  font-size: 13px;
+  color: #bbdefb;
+}
+
+.duration {
+  background: rgba(33, 150, 243, 0.3);
+  color: #e3f2fd;
+  padding: 1px 6px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 500;
+  margin-left: 8px;
+}
+
+.tooltipFooter {
+  padding-top: 6px;
+  border-top: 1px solid rgba(255, 255, 255, 0.3);
+  font-size: 12px;
+  color: #4fc3f7;
+  text-align: center;
+}
+
+/* Arrow pointing up */
+.tooltip::before {
+  content: '';
+  position: absolute;
+  top: -6px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 6px solid transparent;
+  border-right: 6px solid transparent;
+  border-bottom: 6px solid rgba(0, 0, 0, 0.9);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .tooltip {
+    font-size: 11px;
+    padding: 10px;
+    min-width: 180px;
+    max-width: 250px;
+  }
+  
+  .tooltipHeader, .date, .tooltipFooter {
+    font-size: 10px;
+  }
+  
+  .duration {
+    font-size: 9px;
+    padding: 1px 4px;
+  }
+}

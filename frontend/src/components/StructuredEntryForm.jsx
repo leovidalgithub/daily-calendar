@@ -584,6 +584,7 @@ const StructuredEntryForm = ({ selectedDate, onSave, existingData = null }) => {
                       return analytics && (
                         <TaskIndicators 
                           taskStats={processedStats}
+                          taskAnalytics={analytics}
                         />
                       );
                     })()}

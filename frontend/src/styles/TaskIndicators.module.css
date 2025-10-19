@@ -12,12 +12,6 @@
   align-items: center;
 }
 
-.uniqueIcon {
-  font-size: 14px;
-  color: #FFD700;
-  text-shadow: 0 0 2px rgba(255, 215, 0, 0.5);
-}
-
 .taskStatsbadge {
   font-size: 11px;
   background: linear-gradient(135deg, #2196F3, #1976D2);
@@ -49,11 +43,6 @@
 }
 
 /* Hover effects */
-.indicators:hover .uniqueIcon {
-  transform: scale(1.1);
-  transition: transform 0.2s ease;
-}
-
 .indicators:hover .taskStatsbadge {
   background: linear-gradient(135deg, #1976D2, #1565C0);
   transform: translateY(-1px);
