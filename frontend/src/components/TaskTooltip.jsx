@@ -11,27 +11,28 @@ const TaskTooltip = ({ taskId, occurrences, totalDuration, isVisible, position =
   const formatDate = (dateString) => {
     if (!dateString) return 'Invalid Date';
     
-    // Si ya viene en formato de objeto Date, o string válido
-    let date;
+    // Extraer solo la parte de fecha del string
+    const datePart = typeof dateString === 'string' ? dateString.split('T')[0] : dateString;
     
-    // Si es un string, asegurarnos de que tenga el formato correcto
-    if (typeof dateString === 'string') {
-      // Remover cualquier parte de tiempo si existe
-      const datePart = dateString.split('T')[0];
-      // Crear fecha en formato YYYY-MM-DD
-      date = new Date(datePart + 'T00:00:00');
-    } else {
-      date = new Date(dateString);
-    }
+    // Parsear directamente sin crear objeto Date para evitar problemas de zona horaria
+    const [year, month, day] = datePart.split('-');
     
-    // Verificar si la fecha es válida
-    if (isNaN(date.getTime())) {
-      console.error('Invalid date:', dateString);
+    if (!year || !month || !day) {
       return 'Invalid Date';
     }
     
-    const options = { day: 'numeric', month: 'short', year: 'numeric' };
-    return date.toLocaleDateString('en-US', options);
+    // Mapear meses a nombres abreviados
+    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+                       'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    
+    const monthIndex = parseInt(month) - 1;
+    const monthName = monthNames[monthIndex];
+    
+    if (!monthName) {
+      return 'Invalid Date';
+    }
+    
+    return `${monthName} ${parseInt(day)}, ${year}`;
   };
 
   return createPortal(

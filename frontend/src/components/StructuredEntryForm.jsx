@@ -506,7 +506,7 @@ const StructuredEntryForm = ({ selectedDate, onSave, existingData = null }) => {
 
         {/* Lista de tasks existentes */}
         <div className={styles.entries}>
-          {dayEntry.tasks.map((task) => (
+          {dayEntry.tasks.map((task, taskIndex) => (
             <div key={task.id} className={styles.entryClickable} onClick={() => startEditingTask(task)} title="Click to edit task">
               {editingTask && editingTask.id === task.id ? (
                 // Modo edición
@@ -579,7 +579,7 @@ const StructuredEntryForm = ({ selectedDate, onSave, existingData = null }) => {
                     {/* Task Analytics Indicators */}
                     {(() => {
                       const analytics = taskAnalytics[task.taskId];
-                      const processedStats = analytics ? TaskAnalytics.processTaskStatsForDisplay(analytics, selectedDate) : null;
+                      const processedStats = analytics ? TaskAnalytics.processTaskStatsForDisplay(analytics, selectedDate, taskIndex) : null;
                       
                       return analytics && (
                         <TaskIndicators 

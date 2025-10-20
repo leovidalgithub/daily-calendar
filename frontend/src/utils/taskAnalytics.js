@@ -80,8 +80,9 @@ export const processTaskStatsForDisplay = (taskAnalytics, currentDate, taskIndex
   
   const currentDateNormalized = normalizeDate(currentDate);
   
+  // Buscar la ocurrencia específica basada en fecha Y taskIndex
   const currentOccurrence = taskAnalytics.occurrences.find(occ => 
-    normalizeDate(occ.date) === currentDateNormalized
+    normalizeDate(occ.date) === currentDateNormalized && occ.taskIndex === taskIndex
   );
   
   return {

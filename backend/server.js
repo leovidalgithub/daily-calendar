@@ -163,8 +163,9 @@ app.post("/api/entry", checkDatabaseConnection, async (req, res) => {
 
     const query = "INSERT INTO daily_entries (entry_date, content, structured_entries, entry_type) VALUES (?, ?, ?, ?) ON DUPLICATE KEY UPDATE content = VALUES(content), structured_entries = VALUES(structured_entries), entry_type = VALUES(entry_type), updated_at = CURRENT_TIMESTAMP";
 
+    // Asegurar que la fecha se guarde correctamente sin zona horaria
     const [result] = await db.execute(query, [
-      date, 
+      date, // date ya viene en formato YYYY-MM-DD del frontend
       content || null, 
       structuredEntriesJSON, 
       type
@@ -233,14 +234,15 @@ app.get("/api/task-analytics/:taskId", checkDatabaseConnection, async (req, res)
       return res.status(400).json({ error: "Task ID is required" });
     }
 
-    const [rows] = await db.execute("SELECT DATE(entry_date) as entry_date_string, entry_date, content, structured_entries FROM daily_entries ORDER BY entry_date ASC");
+    const [rows] = await db.execute("SELECT id, DATE_FORMAT(entry_date, '%Y-%m-%d') as entry_date, content, structured_entries FROM daily_entries ORDER BY entry_date ASC");
     
     let allTaskOccurrences = [];
     let totalDurationMinutes = 0;
     
     rows.forEach(row => {
       try {
-        const dateString = row.entry_date_string;
+        // Ahora entry_date viene como string puro YYYY-MM-DD desde MySQL
+        const dateString = row.entry_date;
         let rawData = row.structured_entries || row.content;
         
         if (!rawData || (typeof rawData === 'string' && rawData.trim() === '')) {

@@ -298,7 +298,7 @@ export class DayEntry {
   // Convertir todo a JSON para guardar en BD
   toJSON() {
     return {
-      date: this.date,
+      // NO incluimos 'date' aquí porque ya se guarda en la columna 'entry_date'
       meetings: this.meetings.map(m => m.toJSON()),
       tasks: this.tasks.map(t => t.toJSON()),
       notes: this.notes.map(n => n.toJSON())
