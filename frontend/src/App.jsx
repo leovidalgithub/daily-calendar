@@ -3,6 +3,7 @@ import CalendarComponent from "./components/Calendar";
 import SimpleRichEditor from "./components/SimpleRichEditor";
 import StructuredEntryForm from "./components/StructuredEntryForm";
 import { API_BASE_URL } from "./config/api";
+import { Toaster } from 'react-hot-toast';
 import "./App.css";
 
 // Función para obtener fecha en formato YYYY-MM-DD sin problemas de zona horaria
@@ -149,8 +150,7 @@ function App() {
         <div className="app-grid">
           <div className="left-panel">
             <header className="app-header">
-              <h1>📅 Calendario Personal</h1>
-              <p>Selecciona una fecha y guarda tus notas del día</p>
+              <h1>📅 Daily Calendar</h1>
             </header>
 
             <div className="editor-header">
@@ -197,6 +197,30 @@ function App() {
           </div>
         </div>
       </main>
+      <Toaster 
+        position="top-center"
+        toastOptions={{
+          duration: 4000,
+          style: {
+            background: '#363636',
+            color: '#fff',
+          },
+          success: {
+            duration: 4000,
+            iconTheme: {
+              primary: '#0cb64aff',
+              secondary: '#fff',
+            },
+          },
+          error: {
+            duration: 4000,
+            iconTheme: {
+              primary: '#ef4444',
+              secondary: '#fff',
+            },
+          },
+        }}
+      />
     </div>
   );
 }

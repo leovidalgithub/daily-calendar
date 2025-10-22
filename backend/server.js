@@ -2,7 +2,6 @@ import express from "express";
 import mysql from "mysql2/promise";
 import cors from "cors";
 import dotenv from "dotenv";
-import moment from "moment";
 
 dotenv.config();
 
@@ -175,7 +174,6 @@ app.post("/api/entry", checkDatabaseConnection, async (req, res) => {
       "SELECT * FROM daily_entries WHERE entry_date = ?",
       [date]
     );
-    console.log("  Retrieved after save - type:", typeof rows[0].structured_entries);
 
     res.json({
       message: result.insertId
@@ -209,12 +207,12 @@ app.post("/api/entry", checkDatabaseConnection, async (req, res) => {
 app.get("/api/entries", checkDatabaseConnection, async (req, res) => {
   try {
     const [rows] = await db.execute(
-      "SELECT entry_date, created_at, updated_at FROM daily_entries ORDER BY entry_date DESC"
+      "SELECT DATE_FORMAT(entry_date, '%Y-%m-%d') as entry_date, created_at, updated_at FROM daily_entries ORDER BY entry_date DESC"
     );
 
     res.json({
       entries: rows.map((row) => ({
-        date: row.entry_date,
+        date: row.entry_date, // Ahora es string YYYY-MM-DD, no Date object
         created_at: row.created_at,
         updated_at: row.updated_at,
       })),
@@ -351,9 +349,8 @@ app.get("/api/health", (req, res) => {
   res.json({
     status: "OK",
     timestamp: new Date().toISOString(),
-    formattedTime: moment().format('YYYY-MM-DD HH:mm:ss'),
     database: db ? "connected" : "disconnected",
-    npmPackageTest: "moment.js working correctly",
+    npmPackageTest: "npmPackageTest working correctly",
     nodeAppRestatus: "operational"
   });
 });

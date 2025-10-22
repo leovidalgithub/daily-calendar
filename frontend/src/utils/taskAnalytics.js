@@ -71,11 +71,29 @@ export const processTaskStatsForDisplay = (taskAnalytics, currentDate, taskIndex
   }
   
   // Normalizar la fecha actual a formato YYYY-MM-DD
+  // Usar parsing manual para evitar problemas de zona horaria en Safari
   const normalizeDate = (date) => {
-    const d = new Date(date);
-    return d.getFullYear() + '-' + 
-           String(d.getMonth() + 1).padStart(2, '0') + '-' + 
-           String(d.getDate()).padStart(2, '0');
+    if (!date) return '';
+    
+    // Si ya es un string en formato YYYY-MM-DD, extraer solo la parte de fecha
+    if (typeof date === 'string') {
+      const datePart = date.split('T')[0]; // Remover parte de tiempo si existe
+      if (datePart.match(/^\d{4}-\d{2}-\d{2}$/)) {
+        return datePart;
+      }
+    }
+    
+    // Para otros formatos, usar Date pero con manejo cuidadoso
+    try {
+      const d = new Date(date);
+      if (isNaN(d.getTime())) return '';
+      
+      return d.getFullYear() + '-' + 
+             String(d.getMonth() + 1).padStart(2, '0') + '-' + 
+             String(d.getDate()).padStart(2, '0');
+    } catch (error) {
+      return '';
+    }
   };
   
   const currentDateNormalized = normalizeDate(currentDate);

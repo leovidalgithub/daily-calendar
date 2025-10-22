@@ -4,6 +4,8 @@ import styles from '../styles/StructuredEntry.module.css';
 import DurationSelect from './DurationSelect.jsx';
 import TaskIndicators from './TaskIndicators.jsx';
 import * as TaskAnalytics from '../utils/taskAnalytics.js';
+import { API_BASE_URL } from '../config/api.js';
+import toast from 'react-hot-toast';
 
 const StructuredEntryForm = ({ selectedDate, onSave, existingData = null }) => {
   const [dayEntry, setDayEntry] = useState(new DayEntry(selectedDate));
@@ -34,6 +36,9 @@ const StructuredEntryForm = ({ selectedDate, onSave, existingData = null }) => {
   // Estado para estadísticas de tasks
   const [taskAnalytics, setTaskAnalytics] = useState({});
   const [loadingAnalytics, setLoadingAnalytics] = useState(false);
+
+  // Estado para fechas disponibles para mover tasks
+  const [availableDates, setAvailableDates] = useState([]);
 
   // Cargar datos existentes cuando cambien
   useEffect(() => {
@@ -74,6 +79,43 @@ const StructuredEntryForm = ({ selectedDate, onSave, existingData = null }) => {
     loadTaskAnalytics();
   }, [dayEntry.tasks]);
 
+  // Cargar fechas disponibles para mover tasks
+  useEffect(() => {
+    const loadAvailableDates = async () => {
+      try {
+        const response = await fetch(`${API_BASE_URL}/entries`);
+        if (response.ok) {
+          const data = await response.json();
+          
+          // Debug: veamos qué está devolviendo el API
+          console.log('API Response:', data);
+          console.log('Entries:', data.entries);
+          
+          // El API devuelve { entries: [...] }, no un array directo
+          const entries = data.entries || [];
+          
+          // Extraer fechas únicas y ordenarlas
+          const dates = entries.map(entry => entry.date).sort();
+          console.log('Extracted dates:', dates);
+          
+          // Agregar fecha actual si no está en la lista
+          const today = new Date().toISOString().split('T')[0];
+          if (!dates.includes(today)) {
+            dates.push(today);
+            dates.sort();
+          }
+          
+          setAvailableDates(dates);
+        }
+      } catch (error) {
+        console.error('Error loading available dates:', error);
+        setAvailableDates([]);
+      }
+    };
+
+    loadAvailableDates();
+  }, []);
+
   // Funciones de validación
   const validateMeeting = (meeting) => {
     const errors = {};
@@ -106,6 +148,14 @@ const StructuredEntryForm = ({ selectedDate, onSave, existingData = null }) => {
       setNewNote({ content: '' });
       setShowNoteForm(false);
       onSave(dayEntry.toJSON());
+      
+      // Toast de éxito
+      const truncatedContent = newNote.content.length > 30 
+        ? newNote.content.substring(0, 30) + '...' 
+        : newNote.content;
+      toast.success(`Note "${truncatedContent}" added successfully!`, {
+        icon: '📝',
+      });
     }
   };
 
@@ -132,6 +182,11 @@ const StructuredEntryForm = ({ selectedDate, onSave, existingData = null }) => {
       setNewMeeting({ title: '', duration: '', description: '', timeSubmitted: false });
       setShowMeetingForm(false);
       onSave(dayEntry.toJSON());
+      
+      // Toast de éxito
+      toast.success(`Meeting "${newMeeting.title}" added successfully!`, {
+        icon: '📅',
+      });
     }
   };
 
@@ -147,28 +202,66 @@ const StructuredEntryForm = ({ selectedDate, onSave, existingData = null }) => {
       setNewTask({ taskId: '', department: '', status: 'IN_PROGRESS', duration: '', description: '', timeSubmitted: false });
       setShowTaskForm(false);
       onSave(dayEntry.toJSON());
+      
+      // Toast de éxito
+      toast.success(`Task #${newTask.taskId} (${newTask.department}) added successfully!`, {
+        icon: '⚡',
+      });
     }
   };
 
   // Eliminar meeting
   const removeMeeting = (id) => {
+    // Encontrar el meeting antes de eliminarlo para mostrar información en el toast
+    const meetingToDelete = dayEntry.meetings.find(m => m.id === id);
+    
     dayEntry.removeMeeting(id);
     setDayEntry(new DayEntry(dayEntry.date, [...dayEntry.meetings], [...dayEntry.tasks], [...dayEntry.notes]));
     onSave(dayEntry.toJSON());
+    
+    // Toast de eliminación
+    if (meetingToDelete) {
+      toast.success(`Meeting "${meetingToDelete.title}" deleted successfully!`, {
+        icon: '🗑️',
+      });
+    }
   };
 
   // Eliminar task
   const removeTask = (id) => {
+    // Encontrar la task antes de eliminarla para mostrar información en el toast
+    const taskToDelete = dayEntry.tasks.find(t => t.id === id);
+    
     dayEntry.removeTask(id);
     setDayEntry(new DayEntry(dayEntry.date, [...dayEntry.meetings], [...dayEntry.tasks], [...dayEntry.notes]));
     onSave(dayEntry.toJSON());
+    
+    // Toast de eliminación
+    if (taskToDelete) {
+      toast.success(`Task #${taskToDelete.taskId} (${taskToDelete.department}) deleted successfully!`, {
+        icon: '🗑️',
+      });
+    }
   };
 
   // Eliminar note
   const removeNote = (id) => {
+    // Encontrar la note antes de eliminarla para mostrar información en el toast
+    const noteToDelete = dayEntry.notes.find(n => n.id === id);
+    
     dayEntry.removeNote(id);
     setDayEntry(new DayEntry(dayEntry.date, [...dayEntry.meetings], [...dayEntry.tasks], [...dayEntry.notes]));
     onSave(dayEntry.toJSON());
+    
+    // Toast de eliminación
+    if (noteToDelete) {
+      const truncatedContent = noteToDelete.content.length > 30 
+        ? noteToDelete.content.substring(0, 30) + '...' 
+        : noteToDelete.content;
+      toast.success(`Note "${truncatedContent}" deleted successfully!`, {
+        icon: '🗑️',
+      });
+    }
   };
 
   // Funciones de edición para meetings
@@ -198,6 +291,11 @@ const StructuredEntryForm = ({ selectedDate, onSave, existingData = null }) => {
           setDayEntry(new DayEntry(dayEntry.date, [...dayEntry.meetings], [...dayEntry.tasks], [...dayEntry.notes]));
           setEditingMeeting(null);
           onSave(dayEntry.toJSON());
+          
+          // Toast de edición exitosa
+          toast.success(`Meeting "${editingMeeting.title}" updated successfully!`, {
+            icon: '✏️',
+          });
         }
       }
     }
@@ -239,6 +337,11 @@ const StructuredEntryForm = ({ selectedDate, onSave, existingData = null }) => {
           setDayEntry(new DayEntry(dayEntry.date, [...dayEntry.meetings], [...dayEntry.tasks], [...dayEntry.notes]));
           setEditingTask(null);
           onSave(dayEntry.toJSON());
+          
+          // Toast de edición exitosa
+          toast.success(`Task #${editingTask.taskId} (${editingTask.department}) updated successfully!`, {
+            icon: '✏️',
+          });
         }
       }
     }
@@ -247,6 +350,97 @@ const StructuredEntryForm = ({ selectedDate, onSave, existingData = null }) => {
   const cancelEditingTask = () => {
     setEditingTask(null);
     setEditTaskErrors({});
+  };
+
+  // Función para mover una task a otra fecha
+  const moveTaskToDate = async (taskToMove, targetDate) => {
+    try {
+      console.log('Moving task:', taskToMove, 'to date:', targetDate);
+      
+      // 1. Remover la task del día actual
+      const updatedTasks = dayEntry.tasks.filter(t => t.id !== taskToMove.id);
+      const updatedDayEntry = new DayEntry(dayEntry.date, [...dayEntry.meetings], updatedTasks, [...dayEntry.notes]);
+      
+      // 2. Guardar el día actual sin la task (usando el flujo normal)
+      await onSave(updatedDayEntry.toJSON());
+      console.log('✅ Source day updated (task removed)');
+      
+      // 3. Cargar la entrada del día objetivo
+      const response = await fetch(`${API_BASE_URL}/entry/${targetDate}`);
+      console.log('Load target date response:', response.status);
+      
+      let targetDayData = null;
+      if (response.ok) {
+        targetDayData = await response.json();
+        console.log('Target day data loaded:', targetDayData);
+      }
+      
+      // 4. Crear o actualizar la entrada del día objetivo
+      const targetDayEntry = targetDayData && targetDayData.structured_entries
+        ? DayEntry.fromJSON(targetDayData.structured_entries)
+        : new DayEntry(targetDate);
+      
+      // Crear nueva task sin el ID (para evitar conflictos)
+      const newTask = new Task(
+        null, // id
+        taskToMove.taskId,
+        taskToMove.department,
+        taskToMove.status,
+        taskToMove.duration,
+        taskToMove.description,
+        taskToMove.timeSubmitted
+      );
+      
+      console.log('New task created:', newTask);
+      console.log('Target day before adding task:', targetDayEntry.tasks.length, 'tasks');
+      targetDayEntry.tasks.push(newTask);
+      console.log('Target day after adding task:', targetDayEntry.tasks.length, 'tasks');
+      
+      // 5. Guardar el día objetivo (usando el mismo flujo que para agregar tasks)
+      // IMPORTANTE: Usar la misma lógica que App.jsx
+      const saveResponse = await fetch(`${API_BASE_URL}/entry`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          date: targetDate,
+          content: null,
+          structuredEntries: targetDayEntry.toJSON(),
+          entryType: "structured",
+        }),
+      });
+      
+      console.log('Save response:', saveResponse.status);
+      
+      if (saveResponse.ok) {
+        // Actualizar la vista actual
+        setDayEntry(updatedDayEntry);
+        setEditingTask(null);
+        
+        // Mostrar toast de éxito con información de la fecha de destino
+        const formatDateForToast = (dateStr) => {
+          const [year, month, day] = dateStr.split('-');
+          const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+                             'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+          const monthName = monthNames[parseInt(month) - 1];
+          return `${monthName} ${parseInt(day)}, ${year}`;
+        };
+        
+        toast.success(`Task #${taskToMove.taskId} moved to ${formatDateForToast(targetDate)}`);
+      } else {
+        const errorText = await saveResponse.text();
+        console.error('Save failed:', errorText);
+        throw new Error('Failed to save task to target date: ' + errorText);
+      }
+      
+    } catch (error) {
+      console.error('Error moving task:', error);
+      // Usar toast para mostrar error
+      toast.error('Failed to move task. Please try again.', {
+        icon: '❌',
+      });
+    }
   };
 
   // Funciones de edición para notes
@@ -270,6 +464,14 @@ const StructuredEntryForm = ({ selectedDate, onSave, existingData = null }) => {
           setDayEntry(new DayEntry(dayEntry.date, [...dayEntry.meetings], [...dayEntry.tasks], [...dayEntry.notes]));
           setEditingNote(null);
           onSave(dayEntry.toJSON());
+          
+          // Toast de edición exitosa
+          const truncatedContent = editingNote.content.length > 30 
+            ? editingNote.content.substring(0, 30) + '...' 
+            : editingNote.content;
+          toast.success(`Note "${truncatedContent}" updated successfully!`, {
+            icon: '✏️',
+          });
         }
       }
     }
@@ -543,6 +745,65 @@ const StructuredEntryForm = ({ selectedDate, onSave, existingData = null }) => {
                       onChange={(e) => setEditingTask({...editingTask, duration: e.target.value})}
                       className={styles.select}
                     />
+                    <select
+                      onChange={(e) => {
+                        if (e.target.value) {
+                          moveTaskToDate(editingTask, e.target.value);
+                        }
+                        e.target.value = ''; // Reset selection
+                      }}
+                      className={styles.select}
+                      defaultValue=""
+                    >
+                      <option value="">Move this Task to date</option>
+                      {availableDates
+                        .filter(date => {
+                          // No mostrar la fecha actual donde está la task
+                          // Usar formateo seguro sin timezone
+                          const selectedDateNormalized = selectedDate.getFullYear() + '-' + 
+                                 String(selectedDate.getMonth() + 1).padStart(2, '0') + '-' + 
+                                 String(selectedDate.getDate()).padStart(2, '0');
+                          
+                          console.log('🔍 Filter debug:', {
+                            selectedDateNormalized,
+                            availableDate: date,
+                            shouldInclude: date !== selectedDateNormalized
+                          });
+                          
+                          return date !== selectedDateNormalized;
+                        })
+                        .map(date => {
+                        // Formateo seguro de fecha sin problemas de timezone
+                        const formatSafeDate = (dateStr) => {
+                          if (!dateStr) return 'Invalid Date';
+                          
+                          // Parsing manual para evitar problemas de zona horaria
+                          const [year, month, day] = dateStr.split('-');
+                          if (year && month && day) {
+                            // Mapear meses a nombres abreviados
+                            const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+                                               'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                            
+                            const monthIndex = parseInt(month) - 1;
+                            const monthName = monthNames[monthIndex];
+                            const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+                            
+                            // Calcular día de la semana manualmente (aproximado)
+                            const dateObj = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+                            const dayName = dayNames[dateObj.getDay()];
+                            
+                            return `${dayName}, ${monthName} ${parseInt(day)}, ${year}`;
+                          }
+                          return 'Invalid Date';
+                        };
+                        
+                        return (
+                          <option key={date} value={date}>
+                            {formatSafeDate(date)}
+                          </option>
+                        );
+                      })}
+                    </select>
                   </div>
                   <textarea
                     value={editingTask.description}
@@ -560,6 +821,7 @@ const StructuredEntryForm = ({ selectedDate, onSave, existingData = null }) => {
                       <span className={styles.checkboxLabel}>Time submitted to DevOps</span>
                     </label>
                   </div>
+                  
                   <div className={styles.formButtons}>
                     <button onClick={(e) => {
                       e.stopPropagation();
