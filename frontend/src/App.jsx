@@ -1,7 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import CalendarComponent from "./components/Calendar";
-import SimpleRichEditor from "./components/SimpleRichEditor";
 import StructuredEntryForm from "./components/StructuredEntryForm";
+import SearchField from "./components/SearchField";
 import { API_BASE_URL } from "./config/api";
 import { Toaster } from 'react-hot-toast';
 import "./App.css";
@@ -16,11 +16,11 @@ const getLocalDateString = (date) => {
 
 function App() {
   const [selectedDate, setSelectedDate] = useState(new Date());
-  const [content, setContent] = useState("");
   const [structuredEntries, setStructuredEntries] = useState([]);
-  const [entryType, setEntryType] = useState("structured"); // "text" | "structured" - por defecto estructurado
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [hasActiveForms, setHasActiveForms] = useState(false);
+  const searchFieldRef = useRef(null);
 
   // Cargar contenido cuando cambia la fecha seleccionada
   useEffect(() => {
@@ -28,6 +28,78 @@ function App() {
       loadContentForDate(selectedDate);
     }
   }, [selectedDate]);
+
+  // Keyboard navigation
+  useEffect(() => {
+    const handleKeyDown = (event) => {
+      // Handle Ctrl + F for search (works even with active forms)
+      if (event.ctrlKey && event.key === 'f') {
+        event.preventDefault();
+        searchFieldRef.current?.focus();
+        return;
+      }
+
+      // Only handle keyboard navigation when no forms are active and no inputs are focused
+      if (hasActiveForms || 
+          document.activeElement.tagName === 'INPUT' || 
+          document.activeElement.tagName === 'TEXTAREA' || 
+          document.activeElement.tagName === 'SELECT') {
+        return;
+      }
+
+      const currentDate = new Date(selectedDate);
+      let newDate = null;
+
+      switch (event.key) {
+        case 'ArrowLeft':
+          // Previous day
+          newDate = new Date(currentDate);
+          newDate.setDate(currentDate.getDate() - 1);
+          event.preventDefault();
+          break;
+        
+        case 'ArrowRight':
+          // Next day
+          newDate = new Date(currentDate);
+          newDate.setDate(currentDate.getDate() + 1);
+          event.preventDefault();
+          break;
+        
+        case 'ArrowUp':
+          // Previous week
+          newDate = new Date(currentDate);
+          newDate.setDate(currentDate.getDate() - 7);
+          event.preventDefault();
+          break;
+        
+        case 'ArrowDown':
+          // Next week
+          newDate = new Date(currentDate);
+          newDate.setDate(currentDate.getDate() + 7);
+          event.preventDefault();
+          break;
+        
+        case 'Home':
+          // Go to today
+          newDate = new Date();
+          event.preventDefault();
+          break;
+        
+        default:
+          return;
+      }
+
+      if (newDate) {
+        setSelectedDate(newDate);
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [selectedDate, hasActiveForms]);
 
   const loadContentForDate = async (date) => {
     setIsLoading(true);
@@ -37,69 +109,22 @@ function App() {
 
       if (response.ok) {
         const data = await response.json();
-        setContent(data.content || "");
         
         // Manejar datos estructurados correctamente
         const structuredData = data.structured_entries || null;
         setStructuredEntries(structuredData);
-        
-        // Mantener el modo estructurado por defecto, solo cambiar si explícitamente es texto
-        if (data.entry_type === "text" && data.content && !structuredData) {
-          setEntryType("text");
-        } else {
-          setEntryType("structured");
-        }
       } else if (response.status === 404) {
-        // No hay contenido para esta fecha, mantener modo estructurado
-        setContent("");
+        // No hay contenido para esta fecha
         setStructuredEntries(null);
-        setEntryType("structured");
       } else {
         console.error("Error loading content:", response.statusText);
-        setContent("");
         setStructuredEntries(null);
-        setEntryType("structured");
       }
     } catch (error) {
       console.error("Error connecting to server:", error);
-      setContent("");
       setStructuredEntries(null);
-      setEntryType("structured"); // Mantener estructurado por defecto
     } finally {
       setIsLoading(false);
-    }
-  };
-
-  const saveContent = async () => {
-    if (!selectedDate) return;
-
-    setIsSaving(true);
-    try {
-      const dateString = getLocalDateString(selectedDate);
-      const response = await fetch(`${API_BASE_URL}/entry`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          date: dateString,
-          content: entryType === "text" ? content : null,
-          structuredEntries: entryType === "structured" ? structuredEntries : null,
-          entryType: entryType,
-        }),
-      });
-
-      if (response.ok) {
-        // Content saved successfully
-      } else {
-        console.error("Error saving content:", response.statusText);
-        // Aquí podrías mostrar un mensaje de error
-      }
-    } catch (error) {
-      console.error("Error connecting to server:", error);
-      // Aquí podrías mostrar un mensaje de error de conexión
-    } finally {
-      setIsSaving(false);
     }
   };
 
@@ -140,8 +165,14 @@ function App() {
     setSelectedDate(date);
   };
 
-  const handleContentChange = (value) => {
-    setContent(value);
+  // Handle search result selection
+  const handleSearchResultSelect = (date) => {
+    setSelectedDate(date);
+  };
+
+  // Handle active forms state change
+  const handleActiveFormsChange = (hasActive) => {
+    setHasActiveForms(hasActive);
   };
 
   return (
@@ -153,25 +184,15 @@ function App() {
               <h1>📅 Daily Calendar</h1>
             </header>
 
-            <div className="editor-header">
-              <button 
-                className={`mode-toggle ${entryType === "text" ? "active" : ""}`}
-                onClick={() => setEntryType("text")}
-              >
-                📝 Texto Libre
-              </button>
-              <button 
-                className={`mode-toggle ${entryType === "structured" ? "active" : ""}`}
-                onClick={() => setEntryType("structured")}
-              >
-                📋 Entradas Estructuradas
-              </button>
-            </div>
-
             <div className="calendar-section">
               <CalendarComponent
                 selectedDate={selectedDate}
                 onDateChange={handleDateChange}
+              />
+              
+              <SearchField
+                ref={searchFieldRef}
+                onResultSelect={handleSearchResultSelect}
               />
             </div>
           </div>
@@ -179,19 +200,12 @@ function App() {
           <div className="right-panel">
             {isLoading ? (
               <div className="loading">Cargando...</div>
-            ) : entryType === "text" ? (
-              <SimpleRichEditor
-                selectedDate={selectedDate}
-                content={content}
-                onContentChange={handleContentChange}
-                onSave={saveContent}
-                isSaving={isSaving}
-              />
             ) : (
               <StructuredEntryForm
                 selectedDate={selectedDate}
                 onSave={handleStructuredSave}
                 existingData={structuredEntries}
+                onActiveFormsChange={handleActiveFormsChange}
               />
             )}
           </div>

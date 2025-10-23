@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Meeting, Task, Note, DayEntry } from '../models/EntryModels.js';
 import styles from '../styles/StructuredEntry.module.css';
 import DurationSelect from './DurationSelect.jsx';
@@ -7,13 +7,33 @@ import * as TaskAnalytics from '../utils/taskAnalytics.js';
 import { API_BASE_URL } from '../config/api.js';
 import toast from 'react-hot-toast';
 
-const StructuredEntryForm = ({ selectedDate, onSave, existingData = null }) => {
+const StructuredEntryForm = ({ selectedDate, onSave, existingData = null, onActiveFormsChange }) => {
   const [dayEntry, setDayEntry] = useState(new DayEntry(selectedDate));
   
   // Estados para formularios de nuevas entradas
   const [newMeeting, setNewMeeting] = useState({ title: '', duration: '', description: '', timeSubmitted: false });
   const [newTask, setNewTask] = useState({ taskId: '', department: '', status: 'IN_PROGRESS', duration: '', description: '', timeSubmitted: false });
   const [newNote, setNewNote] = useState({ content: '' });
+  
+  // Referencias para inputs de formularios nuevos
+  const newTaskIdRef = useRef(null);
+  const newTaskDepartmentRef = useRef(null);
+  const newTaskStatusRef = useRef(null);
+  const newTaskDurationRef = useRef(null);
+  const newTaskDescriptionRef = useRef(null);
+  const newTaskTimeSubmittedRef = useRef(null);
+  
+  const newMeetingTitleRef = useRef(null);
+  const newMeetingDurationRef = useRef(null);
+  const newMeetingDescriptionRef = useRef(null);
+  const newMeetingTimeSubmittedRef = useRef(null);
+  
+  const newNoteContentRef = useRef(null);
+  
+  // Referencias para controlar focus inicial en edición (solo una vez)
+  const editTaskFocused = useRef(false);
+  const editMeetingFocused = useRef(false);
+  const editNoteFocused = useRef(false);
   
   // Estados para mostrar/ocultar formularios
   const [showMeetingForm, setShowMeetingForm] = useState(false);
@@ -39,6 +59,62 @@ const StructuredEntryForm = ({ selectedDate, onSave, existingData = null }) => {
 
   // Estado para fechas disponibles para mover tasks
   const [availableDates, setAvailableDates] = useState([]);
+
+  // Estado para manejar clicks y double-clicks
+  const [clickTimeout, setClickTimeout] = useState(null);
+
+  // Función para copiar TASK ID al portapapeles
+  const copyTaskIdToClipboard = async (taskId) => {
+    let copySuccessful = false;
+    
+    try {
+      // Intentar usar la API moderna de clipboard
+      await navigator.clipboard.writeText(taskId);
+      copySuccessful = true;
+    } catch (error) {
+      console.error('Modern clipboard API failed:', error);
+      
+      // Fallback para navegadores que no soportan clipboard API
+      try {
+        const textArea = document.createElement('textarea');
+        textArea.value = taskId;
+        textArea.style.position = 'absolute';
+        textArea.style.left = '-9999px';
+        document.body.appendChild(textArea);
+        textArea.select();
+        copySuccessful = document.execCommand('copy');
+        document.body.removeChild(textArea);
+      } catch (fallbackError) {
+        console.error('Fallback copy failed:', fallbackError);
+        copySuccessful = false;
+      }
+    }
+    
+    if (copySuccessful) {
+      toast.success(`Task ID "${taskId}" copied to clipboard!`);
+    } else {
+      toast.error('Failed to copy Task ID to clipboard', {
+        icon: '❌'
+      });
+    }
+  };
+
+  // Manejar click simple con delay para detectar double-click
+  const handleTaskClick = (task) => {
+    if (clickTimeout) {
+      // Es un double-click, cancelar el single click y copiar ID
+      clearTimeout(clickTimeout);
+      setClickTimeout(null);
+      copyTaskIdToClipboard(task.taskId);
+    } else {
+      // Es un single click, establecer timeout para ejecutar después
+      const timeout = setTimeout(() => {
+        startEditingTask(task);
+        setClickTimeout(null);
+      }, 300); // 300ms para detectar double-click
+      setClickTimeout(timeout);
+    }
+  };
 
   // Cargar datos existentes cuando cambien
   useEffect(() => {
@@ -116,6 +192,191 @@ const StructuredEntryForm = ({ selectedDate, onSave, existingData = null }) => {
     loadAvailableDates();
   }, []);
 
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (clickTimeout) {
+        clearTimeout(clickTimeout);
+      }
+    };
+  }, [clickTimeout]);
+
+  // Notify parent about active forms state
+  useEffect(() => {
+    if (onActiveFormsChange) {
+      const hasActiveForms = showMeetingForm || showTaskForm || showNoteForm || 
+                           editingMeeting !== null || editingTask !== null || editingNote !== null;
+      onActiveFormsChange(hasActiveForms);
+    }
+  }, [showMeetingForm, showTaskForm, showNoteForm, editingMeeting, editingTask, editingNote, onActiveFormsChange]);
+
+  // Auto-focus principal field when forms open
+  useEffect(() => {
+    if (showTaskForm && newTaskIdRef.current) {
+      setTimeout(() => newTaskIdRef.current.focus(), 10);
+    }
+  }, [showTaskForm]);
+
+  useEffect(() => {
+    if (showMeetingForm && newMeetingTitleRef.current) {
+      setTimeout(() => newMeetingTitleRef.current.focus(), 10);
+    }
+  }, [showMeetingForm]);
+
+  useEffect(() => {
+    if (showNoteForm && newNoteContentRef.current) {
+      setTimeout(() => newNoteContentRef.current.focus(), 10);
+    }
+  }, [showNoteForm]);
+
+  // Auto-focus principal field when editing forms open
+  useEffect(() => {
+    if (editingTask && !editTaskFocused.current) {
+      // Focus the first input in the editing form (taskId input) only once
+      setTimeout(() => {
+        const editForm = document.querySelector(`[class*="editForm"]`);
+        const taskIdInput = editForm?.querySelector('input[placeholder*="Task ID"]');
+        if (taskIdInput) {
+          taskIdInput.focus();
+          editTaskFocused.current = true;
+        }
+      }, 10);
+    } else if (!editingTask) {
+      // Reset flag when editing is closed
+      editTaskFocused.current = false;
+    }
+  }, [editingTask]);
+
+  useEffect(() => {
+    if (editingMeeting && !editMeetingFocused.current) {
+      // Focus the first input in the editing form (title input) only once
+      setTimeout(() => {
+        const editForm = document.querySelector(`[class*="editForm"]`);
+        const titleInput = editForm?.querySelector('input[placeholder*="Meeting title"]');
+        if (titleInput) {
+          titleInput.focus();
+          editMeetingFocused.current = true;
+        }
+      }, 10);
+    } else if (!editingMeeting) {
+      // Reset flag when editing is closed
+      editMeetingFocused.current = false;
+    }
+  }, [editingMeeting]);
+
+  useEffect(() => {
+    if (editingNote && !editNoteFocused.current) {
+      // Focus the textarea in the editing form only once
+      setTimeout(() => {
+        const editForm = document.querySelector(`[class*="editForm"]`);
+        const contentTextarea = editForm?.querySelector('textarea');
+        if (contentTextarea) {
+          contentTextarea.focus();
+          editNoteFocused.current = true;
+        }
+      }, 10);
+    } else if (!editingNote) {
+      // Reset flag when editing is closed
+      editNoteFocused.current = false;
+    }
+  }, [editingNote]);
+
+  // Helper functions to get current values from refs
+  const getCurrentTaskValues = () => ({
+    taskId: newTaskIdRef.current?.value || '',
+    department: newTaskDepartmentRef.current?.value || '',
+    status: newTaskStatusRef.current?.value || 'IN_PROGRESS',
+    duration: newTaskDurationRef.current?.value || '',
+    description: newTaskDescriptionRef.current?.value || '',
+    timeSubmitted: newTaskTimeSubmittedRef.current?.checked || false
+  });
+
+  const getCurrentMeetingValues = () => ({
+    title: newMeetingTitleRef.current?.value || '',
+    duration: newMeetingDurationRef.current?.value || '',
+    description: newMeetingDescriptionRef.current?.value || '',
+    timeSubmitted: newMeetingTimeSubmittedRef.current?.checked || false
+  });
+
+  const getCurrentNoteValues = () => ({
+    content: newNoteContentRef.current?.value || ''
+  });
+
+  // Handle ESC and Ctrl+Enter keys for forms
+  useEffect(() => {
+    const handleKeyboardShortcuts = (event) => {
+      // Handle Ctrl + Enter to save
+      if (event.ctrlKey && event.key === 'Enter') {
+        event.preventDefault();
+        
+        // For new forms, get current values from refs and validate/save directly
+        if (showTaskForm) {
+          const currentValues = getCurrentTaskValues();
+          console.log('=== DEBUG Ctrl+Enter Task ===');
+          console.log('Current values from refs:', currentValues);
+          
+          addTask(currentValues);
+          return;
+        }
+        
+        if (showMeetingForm) {
+          const currentValues = getCurrentMeetingValues();
+          console.log('=== DEBUG Ctrl+Enter Meeting ===');
+          console.log('Current values from refs:', currentValues);
+          
+          addMeeting(currentValues);
+          return;
+        }
+        
+        if (showNoteForm) {
+          const currentValues = getCurrentNoteValues();
+          console.log('=== DEBUG Ctrl+Enter Note ===');
+          console.log('Current values from refs:', currentValues);
+          
+          addNote(currentValues);
+          return;
+        }
+
+        // For editing forms, use the existing approach
+        if (editingMeeting) {
+          saveEditingMeeting();
+        } else if (editingTask) {
+          saveEditingTask();
+        } else if (editingNote) {
+          saveEditingNote();
+        }
+        return;
+      }
+
+      // Handle ESC to cancel/close
+      if (event.key === 'Escape') {
+        // Close forms in priority order (editing first, then new forms)
+        if (editingMeeting) {
+          cancelEditingMeeting();
+        } else if (editingTask) {
+          cancelEditingTask();
+        } else if (editingNote) {
+          cancelEditingNote();
+        } else if (showMeetingForm) {
+          setShowMeetingForm(false);
+          setMeetingErrors({});
+        } else if (showTaskForm) {
+          setShowTaskForm(false);
+          setTaskErrors({});
+        } else if (showNoteForm) {
+          setShowNoteForm(false);
+          setNoteErrors({});
+        }
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyboardShortcuts);
+
+    return () => {
+      document.removeEventListener('keydown', handleKeyboardShortcuts);
+    };
+  }, [editingMeeting, editingTask, editingNote, showMeetingForm, showTaskForm, showNoteForm]);
+
   // Funciones de validación
   const validateMeeting = (meeting) => {
     const errors = {};
@@ -137,12 +398,16 @@ const StructuredEntryForm = ({ selectedDate, onSave, existingData = null }) => {
   };
 
   // Agregar nueva note
-  const addNote = () => {
-    const errors = validateNote(newNote);
+  const addNote = (noteValues = null) => {
+    const valuesToValidate = noteValues || newNote;
+    console.log('=== DEBUG addNote ===');
+    console.log('values to validate:', valuesToValidate);
+    
+    const errors = validateNote(valuesToValidate);
     setNoteErrors(errors);
     
     if (Object.keys(errors).length === 0) {
-      const note = new Note(null, newNote.content);
+      const note = new Note(null, valuesToValidate.content);
       dayEntry.addNote(note);
       setDayEntry(new DayEntry(dayEntry.date, [...dayEntry.meetings], [...dayEntry.tasks], [...dayEntry.notes]));
       setNewNote({ content: '' });
@@ -150,9 +415,9 @@ const StructuredEntryForm = ({ selectedDate, onSave, existingData = null }) => {
       onSave(dayEntry.toJSON());
       
       // Toast de éxito
-      const truncatedContent = newNote.content.length > 30 
-        ? newNote.content.substring(0, 30) + '...' 
-        : newNote.content;
+      const truncatedContent = valuesToValidate.content.length > 30 
+        ? valuesToValidate.content.substring(0, 30) + '...' 
+        : valuesToValidate.content;
       toast.success(`Note "${truncatedContent}" added successfully!`, {
         icon: '📝',
       });
@@ -171,12 +436,18 @@ const StructuredEntryForm = ({ selectedDate, onSave, existingData = null }) => {
   ];
 
   // Agregar nuevo meeting
-  const addMeeting = () => {
-    const errors = validateMeeting(newMeeting);
+  const addMeeting = (meetingValues = null) => {
+    console.log('=== DEBUG addMeeting ===');
+    const valuesToValidate = meetingValues || newMeeting;
+    console.log('values to validate:', valuesToValidate);
+    
+    const errors = validateMeeting(valuesToValidate);
+    console.log('validation errors:', errors);
+    
     setMeetingErrors(errors);
     
     if (Object.keys(errors).length === 0) {
-      const meeting = new Meeting(null, newMeeting.title, newMeeting.duration, newMeeting.description, newMeeting.timeSubmitted);
+      const meeting = new Meeting(null, valuesToValidate.title, valuesToValidate.duration, valuesToValidate.description, valuesToValidate.timeSubmitted);
       dayEntry.addMeeting(meeting);
       setDayEntry(new DayEntry(dayEntry.date, [...dayEntry.meetings], [...dayEntry.tasks], [...dayEntry.notes]));
       setNewMeeting({ title: '', duration: '', description: '', timeSubmitted: false });
@@ -184,19 +455,25 @@ const StructuredEntryForm = ({ selectedDate, onSave, existingData = null }) => {
       onSave(dayEntry.toJSON());
       
       // Toast de éxito
-      toast.success(`Meeting "${newMeeting.title}" added successfully!`, {
+      toast.success(`Meeting "${valuesToValidate.title}" added successfully!`, {
         icon: '📅',
       });
     }
   };
 
   // Agregar nueva task
-  const addTask = () => {
-    const errors = validateTask(newTask);
+  const addTask = (taskValues = null) => {
+    console.log('=== DEBUG addTask ===');
+    const valuesToValidate = taskValues || newTask;
+    console.log('values to validate:', valuesToValidate);
+    
+    const errors = validateTask(valuesToValidate);
+    console.log('validation errors:', errors);
+    
     setTaskErrors(errors);
     
     if (Object.keys(errors).length === 0) {
-      const task = new Task(null, newTask.taskId, newTask.department, newTask.status, newTask.duration, newTask.description, newTask.timeSubmitted);
+      const task = new Task(null, valuesToValidate.taskId, valuesToValidate.department, valuesToValidate.status, valuesToValidate.duration, valuesToValidate.description, valuesToValidate.timeSubmitted);
       dayEntry.addTask(task);
       setDayEntry(new DayEntry(dayEntry.date, [...dayEntry.meetings], [...dayEntry.tasks], [...dayEntry.notes]));
       setNewTask({ taskId: '', department: '', status: 'IN_PROGRESS', duration: '', description: '', timeSubmitted: false });
@@ -204,7 +481,7 @@ const StructuredEntryForm = ({ selectedDate, onSave, existingData = null }) => {
       onSave(dayEntry.toJSON());
       
       // Toast de éxito
-      toast.success(`Task #${newTask.taskId} (${newTask.department}) added successfully!`, {
+      toast.success(`Task #${valuesToValidate.taskId} (${valuesToValidate.department}) added successfully!`, {
         icon: '⚡',
       });
     }
@@ -490,7 +767,7 @@ const StructuredEntryForm = ({ selectedDate, onSave, existingData = null }) => {
       month: 'long', 
       day: 'numeric' 
     };
-    return new Date(date).toLocaleDateString('es-ES', options);
+    return new Date(date).toLocaleDateString('en-US', options);
   };
 
   return (
@@ -517,6 +794,7 @@ const StructuredEntryForm = ({ selectedDate, onSave, existingData = null }) => {
           <div className={styles.form}>
             <div className={styles.formRow}>
               <input
+                ref={newMeetingTitleRef}
                 type="text"
                 placeholder="Meeting title (e.g., Scrum meeting, Call with Sonia)"
                 value={newMeeting.title}
@@ -524,22 +802,37 @@ const StructuredEntryForm = ({ selectedDate, onSave, existingData = null }) => {
                 className={meetingErrors.title ? styles.inputError : styles.input}
               />
               <DurationSelect
+                ref={newMeetingDurationRef}
                 value={newMeeting.duration}
-                onChange={(e) => setNewMeeting({...newMeeting, duration: e.target.value})}
+                onChange={(e) => {
+                  const newDuration = e.target.value;
+                  setNewMeeting({
+                    ...newMeeting, 
+                    duration: newDuration,
+                    // If duration is empty, disable timeSubmitted
+                    timeSubmitted: newDuration === '' ? false : newMeeting.timeSubmitted
+                  });
+                }}
                 className={styles.select}
               />
             </div>
             <textarea
+              ref={newMeetingDescriptionRef}
               placeholder="Description (optional)"
               value={newMeeting.description}
               onChange={(e) => setNewMeeting({...newMeeting, description: e.target.value})}
               className={styles.textarea}
             />
             <div className={styles.checkboxRow}>
-              <label className={styles.checkbox}>
+              <label 
+                className={styles.checkbox}
+                title={!newMeeting.duration || newMeeting.duration === '' ? 'You must select a duration first' : ''}
+              >
                 <input
+                  ref={newMeetingTimeSubmittedRef}
                   type="checkbox"
                   checked={newMeeting.timeSubmitted}
+                  disabled={!newMeeting.duration || newMeeting.duration === ''}
                   onChange={(e) => setNewMeeting({...newMeeting, timeSubmitted: e.target.checked})}
                 />
                 <span className={styles.checkboxLabel}>Time submitted to DevOps</span>
@@ -558,7 +851,12 @@ const StructuredEntryForm = ({ selectedDate, onSave, existingData = null }) => {
         {/* Lista de meetings existentes */}
         <div className={styles.entries}>
           {dayEntry.meetings.map((meeting) => (
-            <div key={meeting.id} className={styles.entryClickable} onClick={() => startEditingMeeting(meeting)} title="Click to edit meeting">
+            <div 
+              key={meeting.id} 
+              className={editingMeeting && editingMeeting.id === meeting.id ? styles.entry : styles.entryClickable}
+              onClick={editingMeeting && editingMeeting.id === meeting.id ? undefined : () => startEditingMeeting(meeting)}
+              title={editingMeeting && editingMeeting.id === meeting.id ? "" : "Click to edit meeting"}
+            >
               {editingMeeting && editingMeeting.id === meeting.id ? (
                 // Modo edición
                 <div className={styles.editForm} onClick={(e) => e.stopPropagation()}>
@@ -572,7 +870,15 @@ const StructuredEntryForm = ({ selectedDate, onSave, existingData = null }) => {
                     />
                     <DurationSelect
                       value={editingMeeting.duration}
-                      onChange={(e) => setEditingMeeting({...editingMeeting, duration: e.target.value})}
+                      onChange={(e) => {
+                        const newDuration = e.target.value;
+                        setEditingMeeting({
+                          ...editingMeeting, 
+                          duration: newDuration,
+                          // If duration is empty, disable timeSubmitted
+                          timeSubmitted: newDuration === '' ? false : editingMeeting.timeSubmitted
+                        });
+                      }}
                       className={styles.select}
                     />
                   </div>
@@ -583,10 +889,14 @@ const StructuredEntryForm = ({ selectedDate, onSave, existingData = null }) => {
                     placeholder="Description"
                   />
                   <div className={styles.checkboxRow}>
-                    <label className={styles.checkbox}>
+                    <label 
+                      className={styles.checkbox}
+                      title={!editingMeeting.duration || editingMeeting.duration === '' ? 'You must select a duration first' : ''}
+                    >
                       <input
                         type="checkbox"
                         checked={editingMeeting.timeSubmitted}
+                        disabled={!editingMeeting.duration || editingMeeting.duration === ''}
                         onChange={(e) => setEditingMeeting({...editingMeeting, timeSubmitted: e.target.checked})}
                       />
                       <span className={styles.checkboxLabel}>Time submitted to DevOps</span>
@@ -649,6 +959,7 @@ const StructuredEntryForm = ({ selectedDate, onSave, existingData = null }) => {
           <div className={styles.form}>
             <div className={styles.formRow}>
               <input
+                ref={newTaskIdRef}
                 type="text"
                 placeholder="Task ID (e.g., 104781)"
                 value={newTask.taskId}
@@ -656,6 +967,7 @@ const StructuredEntryForm = ({ selectedDate, onSave, existingData = null }) => {
                 className={taskErrors.taskId ? styles.taskIdInputError : styles.taskIdInput}
               />
               <select
+                ref={newTaskDepartmentRef}
                 value={newTask.department}
                 onChange={(e) => setNewTask({...newTask, department: e.target.value})}
                 className={taskErrors.department ? styles.selectError : styles.select}
@@ -666,6 +978,7 @@ const StructuredEntryForm = ({ selectedDate, onSave, existingData = null }) => {
                 ))}
               </select>
               <select
+                ref={newTaskStatusRef}
                 value={newTask.status}
                 onChange={(e) => setNewTask({...newTask, status: e.target.value})}
                 className={styles.select}
@@ -675,22 +988,37 @@ const StructuredEntryForm = ({ selectedDate, onSave, existingData = null }) => {
                 ))}
               </select>
               <DurationSelect
+                ref={newTaskDurationRef}
                 value={newTask.duration}
-                onChange={(e) => setNewTask({...newTask, duration: e.target.value})}
+                onChange={(e) => {
+                  const newDuration = e.target.value;
+                  setNewTask({
+                    ...newTask, 
+                    duration: newDuration,
+                    // If duration is empty, disable timeSubmitted
+                    timeSubmitted: newDuration === '' ? false : newTask.timeSubmitted
+                  });
+                }}
                 className={styles.select}
               />
             </div>
             <textarea
+              ref={newTaskDescriptionRef}
               placeholder="Task description"
               value={newTask.description}
               onChange={(e) => setNewTask({...newTask, description: e.target.value})}
               className={styles.textarea}
             />
             <div className={styles.checkboxRow}>
-              <label className={styles.checkbox}>
+              <label 
+                className={styles.checkbox}
+                title={!newTask.duration || newTask.duration === '' ? 'You must select a duration first' : ''}
+              >
                 <input
+                  ref={newTaskTimeSubmittedRef}
                   type="checkbox"
                   checked={newTask.timeSubmitted}
+                  disabled={!newTask.duration || newTask.duration === ''}
                   onChange={(e) => setNewTask({...newTask, timeSubmitted: e.target.checked})}
                 />
                 <span className={styles.checkboxLabel}>Time submitted to DevOps</span>
@@ -709,7 +1037,12 @@ const StructuredEntryForm = ({ selectedDate, onSave, existingData = null }) => {
         {/* Lista de tasks existentes */}
         <div className={styles.entries}>
           {dayEntry.tasks.map((task, taskIndex) => (
-            <div key={task.id} className={styles.entryClickable} onClick={() => startEditingTask(task)} title="Click to edit task">
+            <div 
+              key={task.id} 
+              className={editingTask && editingTask.id === task.id ? styles.entry : styles.entryClickable}
+              onClick={editingTask && editingTask.id === task.id ? undefined : () => handleTaskClick(task)}
+              title={editingTask && editingTask.id === task.id ? "" : "Click to edit task | Double-click to copy Task ID"}
+            >
               {editingTask && editingTask.id === task.id ? (
                 // Modo edición
                 <div className={styles.editForm} onClick={(e) => e.stopPropagation()}>
@@ -742,7 +1075,15 @@ const StructuredEntryForm = ({ selectedDate, onSave, existingData = null }) => {
                     </select>
                     <DurationSelect
                       value={editingTask.duration}
-                      onChange={(e) => setEditingTask({...editingTask, duration: e.target.value})}
+                      onChange={(e) => {
+                        const newDuration = e.target.value;
+                        setEditingTask({
+                          ...editingTask, 
+                          duration: newDuration,
+                          // If duration is empty, disable timeSubmitted
+                          timeSubmitted: newDuration === '' ? false : editingTask.timeSubmitted
+                        });
+                      }}
                       className={styles.select}
                     />
                     <select
@@ -812,10 +1153,14 @@ const StructuredEntryForm = ({ selectedDate, onSave, existingData = null }) => {
                     placeholder="Task description"
                   />
                   <div className={styles.checkboxRow}>
-                    <label className={styles.checkbox}>
+                    <label 
+                      className={styles.checkbox}
+                      title={!editingTask.duration || editingTask.duration === '' ? 'You must select a duration first' : ''}
+                    >
                       <input
                         type="checkbox"
                         checked={editingTask.timeSubmitted}
+                        disabled={!editingTask.duration || editingTask.duration === ''}
                         onChange={(e) => setEditingTask({...editingTask, timeSubmitted: e.target.checked})}
                       />
                       <span className={styles.checkboxLabel}>Time submitted to DevOps</span>
@@ -847,6 +1192,7 @@ const StructuredEntryForm = ({ selectedDate, onSave, existingData = null }) => {
                         <TaskIndicators 
                           taskStats={processedStats}
                           taskAnalytics={analytics}
+                          currentTask={task}
                         />
                       );
                     })()}
@@ -896,6 +1242,7 @@ const StructuredEntryForm = ({ selectedDate, onSave, existingData = null }) => {
         {showNoteForm && (
           <div className={styles.form}>
             <textarea
+              ref={newNoteContentRef}
               placeholder="Add a general note for the day..."
               value={newNote.content}
               onChange={(e) => setNewNote({...newNote, content: e.target.value})}

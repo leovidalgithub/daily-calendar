@@ -155,8 +155,8 @@ app.post("/api/entry", checkDatabaseConnection, async (req, res) => {
         .json({ error: "Invalid date format. Use YYYY-MM-DD" });
     }
 
-    // Determinar el tipo de entrada
-    const type = entryType || (structuredEntries ? 'structured' : 'text');
+    // Siempre usar tipo estructurado
+    const type = 'structured';
 
     const structuredEntriesJSON = structuredEntries ? JSON.stringify(structuredEntries) : null;
 
@@ -184,7 +184,7 @@ app.post("/api/entry", checkDatabaseConnection, async (req, res) => {
         content: rows[0].content,
         structured_entries: rows[0].structured_entries ? (() => {
           try {
-            console.log("POST - Trying to parse:", rows[0].structured_entries);
+            //console.log("POST - Trying to parse:", rows[0].structured_entries);
             return JSON.parse(rows[0].structured_entries);
           } catch (error) {
             console.error("POST - Error parsing structured_entries JSON:", error);
@@ -309,8 +309,142 @@ app.get("/api/task-analytics/:taskId", checkDatabaseConnection, async (req, res)
   }
 });
 
+// Search endpoint - buscar en contenido estructurado
+app.get("/api/search", checkDatabaseConnection, async (req, res) => {
+  try {
+    const { q } = req.query;
+    
+    if (!q || q.trim().length === 0) {
+      return res.json({ results: [], total: 0 });
+    }
+
+    const searchTerm = q.trim();
+    
+    // Obtener todas las entradas con structured_entries
+    const [rows] = await db.execute(
+      "SELECT DATE_FORMAT(entry_date, '%Y-%m-%d') as entry_date, structured_entries FROM daily_entries WHERE structured_entries IS NOT NULL ORDER BY entry_date DESC"
+    );
+    
+    let searchResults = [];
+    
+    rows.forEach(row => {
+      try {
+        const dateString = row.entry_date;
+        let structuredData;
+        
+        try {
+          structuredData = typeof row.structured_entries === 'string' 
+            ? JSON.parse(row.structured_entries) 
+            : row.structured_entries;
+        } catch (jsonError) {
+          return; // Skip invalid JSON
+        }
+
+        if (!structuredData || typeof structuredData !== 'object') {
+          return;
+        }
+
+        // Buscar en meetings
+        if (structuredData.meetings && Array.isArray(structuredData.meetings)) {
+          structuredData.meetings.forEach((meeting, index) => {
+            const searchableText = [
+              meeting.title || '',
+              meeting.description || '',
+              meeting.duration || ''
+            ].join(' ').toLowerCase();
+            
+            if (searchableText.includes(searchTerm.toLowerCase())) {
+              searchResults.push({
+                date: dateString,
+                type: 'meeting',
+                title: meeting.title || 'Untitled Meeting',
+                description: meeting.description || '',
+                duration: meeting.duration || '',
+                timeSubmitted: meeting.timeSubmitted || false,
+                index: index,
+                preview: truncateText(meeting.title || meeting.description || 'Meeting', 60)
+              });
+            }
+          });
+        }
+
+        // Buscar en tasks
+        if (structuredData.tasks && Array.isArray(structuredData.tasks)) {
+          structuredData.tasks.forEach((task, index) => {
+            const searchableText = [
+              task.taskId || '',
+              task.department || '',
+              task.status || '',
+              task.description || '',
+              task.duration || ''
+            ].join(' ').toLowerCase();
+            
+            if (searchableText.includes(searchTerm.toLowerCase())) {
+              searchResults.push({
+                date: dateString,
+                type: 'task',
+                taskId: task.taskId || '',
+                department: task.department || '',
+                status: task.status || '',
+                description: task.description || '',
+                duration: task.duration || '',
+                timeSubmitted: task.timeSubmitted || false,
+                index: index,
+                preview: `#${task.taskId} (${task.department}) - ${truncateText(task.description || task.status, 40)}`
+              });
+            }
+          });
+        }
+
+        // Buscar en notes
+        if (structuredData.notes && Array.isArray(structuredData.notes)) {
+          structuredData.notes.forEach((note, index) => {
+            const searchableText = (note.content || '').toLowerCase();
+            
+            if (searchableText.includes(searchTerm.toLowerCase())) {
+              searchResults.push({
+                date: dateString,
+                type: 'note',
+                content: note.content || '',
+                index: index,
+                preview: truncateText(note.content || 'Note', 60)
+              });
+            }
+          });
+        }
+        
+      } catch (parseError) {
+        console.error(`Error processing search for ${row.entry_date}:`, parseError.message);
+      }
+    });
+
+    // Ordenar por fecha cronológica (más antiguos primero) y limitar a 50 resultados
+    searchResults.sort((a, b) => new Date(a.date) - new Date(b.date));
+    const limitedResults = searchResults.slice(0, 50);
+
+    res.json({
+      results: limitedResults,
+      total: limitedResults.length,
+      searchTerm: searchTerm,
+      hasMore: searchResults.length > 50
+    });
+    
+  } catch (error) {
+    console.error("Error performing search:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// Helper function para truncar texto
+function truncateText(text, maxLength) {
+  if (!text || text.length <= maxLength) {
+    return text;
+  }
+  return text.substring(0, maxLength) + '...';
+}
+
 function parseDurationToMinutes(durationStr) {
-  if (!durationStr) return 0;
+  if (!durationStr || durationStr === '0') return 0;
   
   let totalMinutes = 0;
   

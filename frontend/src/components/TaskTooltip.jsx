@@ -2,6 +2,33 @@ import React from 'react';
 import { createPortal } from 'react-dom';
 import styles from '../styles/TaskTooltip.module.css';
 
+// Helper function to determine individual occurrence duration display
+const getOccurrenceDurationDisplay = (occurrence) => {
+  // If duration is empty/falsy, it means no duration was selected
+  if (!occurrence.duration || occurrence.duration === '') {
+    return { icon: '🚫⏱️', text: 'NO DURATION SET' };
+  }
+  
+  // If duration is "0m", it means "NO TIME" was selected
+  if (occurrence.duration === '0m') {
+    return { icon: '⏱️', text: 'NO TIME' };
+  }
+  
+  // Regular duration
+  return { icon: '⏱️', text: occurrence.duration };
+};
+
+// Helper function to determine total duration display
+const getTotalDurationDisplay = (occurrences, totalDuration) => {
+  // If totalDuration exists and is not "0m", show the actual accumulated time
+  if (totalDuration && totalDuration !== '0m') {
+    return totalDuration;
+  }
+  
+  // If totalDuration is "0m" or falsy, always show "0m"
+  return '0m';
+};
+
 const TaskTooltip = ({ taskId, occurrences, totalDuration, isVisible, position = { x: 0, y: 0 } }) => {
   if (!isVisible || !occurrences || occurrences.length <= 1) {
     return null;
@@ -47,15 +74,20 @@ const TaskTooltip = ({ taskId, occurrences, totalDuration, isVisible, position =
         <strong>Task #{taskId} - All occurrences:</strong>
       </div>
       <div className={styles.tooltipBody}>
-        {occurrences.map((occurrence, index) => (
-          <div key={index} className={styles.occurrenceRow}>
-            <span className={styles.date}>📅 {formatDate(occurrence.date)}</span>
-            <span className={styles.duration}>{occurrence.duration || '0m'}</span>
-          </div>
-        ))}
+        {occurrences.map((occurrence, index) => {
+          const durationDisplay = getOccurrenceDurationDisplay(occurrence);
+          return (
+            <div key={index} className={styles.occurrenceRow}>
+              <span className={styles.date}>📅 {formatDate(occurrence.date)}</span>
+              <span className={styles.duration}>
+                {durationDisplay.icon} {durationDisplay.text}
+              </span>
+            </div>
+          );
+        })}
       </div>
       <div className={styles.tooltipFooter}>
-        <strong>Total accumulated: {totalDuration}</strong>
+        <strong>Total accumulated: {getTotalDurationDisplay(occurrences, totalDuration)}</strong>
       </div>
     </div>,
     document.body

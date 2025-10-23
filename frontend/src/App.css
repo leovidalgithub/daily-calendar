@@ -62,32 +62,6 @@
   display: none;
 }
 
-.editor-header {
-  display: flex;
-  gap: 10px;
-  margin-bottom: 20px;
-}
-
-.mode-toggle {
-  padding: 8px 16px;
-  border: 2px solid #667eea;
-  background: white;
-  color: #667eea;
-  border-radius: 6px;
-  cursor: pointer;
-  font-weight: 500;
-  transition: all 0.3s ease;
-}
-
-.mode-toggle:hover {
-  background: #f0f4ff;
-}
-
-.mode-toggle.active {
-  background: #667eea;
-  color: white;
-}
-
 .structured-view {
   background: white;
   border-radius: 12px;
@@ -147,19 +121,6 @@
     width: 100%;
     max-width: min(970px, calc(100vw - 40px));
     margin: 0 auto;
-  }
-
-  .editor-header {
-    flex-direction: row;
-    gap: 8px;
-    justify-content: center;
-    max-width: 400px;
-  }
-  
-  .mode-toggle {
-    flex: 1;
-    text-align: center;
-    min-width: 0;
   }
   
   /* Limitar ancho del calendario en móvil */

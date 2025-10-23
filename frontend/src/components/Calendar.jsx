@@ -5,10 +5,11 @@ import styles from "../styles/Calendar.module.css";
 const CalendarComponent = ({ selectedDate, onDateChange }) => {
   return (
     <div className={styles.calendarContainer}>
-      <h2 className={styles.title}>Selecciona una fecha</h2>
+      <h2 className={styles.title}>Select a date</h2>
       <Calendar
         onChange={onDateChange}
         value={selectedDate}
+        locale="en-US"
         className={styles.calendar}
         tileClassName={({ date, view }) => {
           if (

@@ -1,13 +1,15 @@
-import React from 'react';
+import React, { forwardRef } from 'react';
 
-const DurationSelect = ({ value, onChange, className, placeholder = "Select Duration" }) => {
+const DurationSelect = forwardRef(({ value, onChange, className, placeholder = "Select Duration" }, ref) => {
   return (
     <select
+      ref={ref}
       value={value}
       onChange={onChange}
       className={className}
     >
       <option value="">{placeholder}</option>
+      <option value="0m">NO TIME</option>
       <option value="5m">5 minutes</option>
       <option value="10m">10 minutes</option>
       <option value="15m">15 minutes</option>
@@ -100,6 +102,8 @@ const DurationSelect = ({ value, onChange, className, placeholder = "Select Dura
       <option value="7h30m">7h 30m</option>
     </select>
   );
-};
+});
+
+DurationSelect.displayName = 'DurationSelect';
 
 export default DurationSelect;

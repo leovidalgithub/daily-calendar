@@ -2,9 +2,49 @@ import React, { useState, useRef } from 'react';
 import styles from '../styles/TaskIndicators.module.css';
 import TaskTooltip from './TaskTooltip.jsx';
 
+// Helper function to determine duration display
+const getDurationDisplay = (taskStats, taskAnalytics, currentTask = null) => {
+  // If we have currentTask info, evaluate just this specific task
+  if (currentTask) {
+    // Check if current task has no duration selected
+    if (!currentTask.duration || currentTask.duration === '') {
+      return { icon: '🚫⏱️', text: 'NO DURATION SET' };
+    }
+    
+    // Check if current task has "0m" (NO TIME selected)
+    if (currentTask.duration === '0m') {
+      return { icon: '⏱️', text: 'NO TIME' };
+    }
+    
+    // Regular duration for current task
+    return { icon: '⏱️', text: currentTask.duration };
+  }
+  
+  // Fallback to old logic if no currentTask provided
+  if (taskAnalytics && taskAnalytics.occurrences) {
+    const hasEmptyDuration = taskAnalytics.occurrences.some(occurrence => 
+      !occurrence.duration || occurrence.duration === ''
+    );
+    
+    if (hasEmptyDuration) {
+      return { icon: '🚫⏱️', text: 'NO DURATION SET' };
+    }
+  }
+  
+  // If we reach here, all occurrences have some duration value
+  // If totalDuration is "0m", it means all selected durations were "NO TIME"
+  if (taskStats.totalDuration === '0m') {
+    return { icon: '⏱️', text: 'NO TIME' };
+  }
+  
+  // Regular duration display
+  return { icon: '⏱️', text: taskStats.totalDuration || 'NO TIME' };
+};
+
 const TaskIndicators = ({ 
   taskStats,
   taskAnalytics, // Añadimos toda la información de analytics
+  currentTask = null, // New parameter for current task info
   showTooltip = false,
   onMouseEnter = null,
   onMouseLeave = null 
@@ -63,6 +103,8 @@ const TaskIndicators = ({
     );
   }
 
+  const durationDisplay = getDurationDisplay(taskStats, taskAnalytics, currentTask);
+
   return (
     <>
       <div 
@@ -73,8 +115,8 @@ const TaskIndicators = ({
       >
         {/* Indicador unificado de frecuencia y duración */}
         <div className={styles.taskStatsIndicator}>
-          <span className={styles.taskStatsbadge} title={`Occurrence ${taskStats.orderDisplay} - Total accumulated time: ${taskStats.totalDuration}`}>
-            {taskStats.isUnique ? '⭐' : '📊'} {taskStats.orderDisplay} ⏱️ {taskStats.totalDuration}
+          <span className={styles.taskStatsbadge} title={`Occurrence ${taskStats.orderDisplay} - Total accumulated time: ${durationDisplay.text}`}>
+            {taskStats.isUnique ? '⭐' : '📊'} {taskStats.orderDisplay} {durationDisplay.icon} {durationDisplay.text}
           </span>
         </div>
       </div>
