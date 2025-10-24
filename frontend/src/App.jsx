@@ -5,6 +5,7 @@ import SearchField from "./components/SearchField";
 import DaySummary from "./components/DaySummary";
 import ThemeToggle from "./components/ThemeToggle";
 import ExportButton from "./components/ExportButton";
+import VersionInfo from "./components/VersionInfo";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { API_BASE_URL } from "./config/api";
 import { Toaster } from 'react-hot-toast';
@@ -262,6 +263,7 @@ function App() {
         />
         
         <ExportButton />
+        <VersionInfo />
       </div>
     </ThemeProvider>
   );
