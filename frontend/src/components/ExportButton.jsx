@@ -78,7 +78,9 @@ const ExportButton = () => {
             const suffix = meeting.timeSubmitted ? '' : '***';
             exportText += `${meeting.title} ${formatDuration(meeting.duration, meeting.timeSubmitted)}${suffix} ${deptId}\n`;
             if (meeting.description && meeting.description.trim()) {
-              exportText += `${meeting.description}\n`;
+              // Reemplazar saltos de línea por saltos de línea con tab para mantener indentación
+              const indentedDescription = meeting.description.replace(/\n/g, '\n\t');
+              exportText += `\t${indentedDescription}\n`;
             }
           });
           

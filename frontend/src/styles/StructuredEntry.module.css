@@ -345,6 +345,7 @@
 .entryTitle {
   color: var(--text-primary);
   flex: 1;
+  white-space: pre-wrap; /* Preserva saltos de línea */
 }
 
 .entryTitleClickable {
@@ -469,6 +470,7 @@
   line-height: 1.4;
   padding-left: 15px;
   border-left: 3px solid var(--border-color);
+  white-space: pre-wrap; /* Preserva saltos de línea */
 }
 
 /* Resumen del día */

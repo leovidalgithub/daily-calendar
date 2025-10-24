@@ -874,6 +874,13 @@ const StructuredEntryForm = ({ selectedDate, onSave, existingData = null, onActi
               placeholder="Description (optional)"
               value={newMeeting.description}
               onChange={(e) => setNewMeeting({...newMeeting, description: e.target.value})}
+              onKeyDown={(e) => {
+                // Allow Enter for new lines, but Ctrl+Enter saves
+                if (e.key === 'Enter' && !e.ctrlKey) {
+                  // Don't prevent default - allow normal Enter behavior (new line)
+                  return;
+                }
+              }}
               className={styles.textarea}
               maxLength={500}
             />
@@ -951,6 +958,13 @@ const StructuredEntryForm = ({ selectedDate, onSave, existingData = null, onActi
                   <textarea
                     value={editingMeeting.description}
                     onChange={(e) => setEditingMeeting({...editingMeeting, description: e.target.value})}
+                    onKeyDown={(e) => {
+                      // Allow Enter for new lines, but Ctrl+Enter saves
+                      if (e.key === 'Enter' && !e.ctrlKey) {
+                        // Don't prevent default - allow normal Enter behavior (new line)
+                        return;
+                      }
+                    }}
                     className={styles.textarea}
                     placeholder="Description"
                     maxLength={500}
@@ -1075,6 +1089,13 @@ const StructuredEntryForm = ({ selectedDate, onSave, existingData = null, onActi
               placeholder="Task description"
               value={newTask.description}
               onChange={(e) => setNewTask({...newTask, description: e.target.value})}
+              onKeyDown={(e) => {
+                // Allow Enter for new lines, but Ctrl+Enter saves
+                if (e.key === 'Enter' && !e.ctrlKey) {
+                  // Don't prevent default - allow normal Enter behavior (new line)
+                  return;
+                }
+              }}
               className={styles.textarea}
               maxLength={500}
             />
@@ -1161,6 +1182,13 @@ const StructuredEntryForm = ({ selectedDate, onSave, existingData = null, onActi
                   <textarea
                     value={editingTask.description}
                     onChange={(e) => setEditingTask({...editingTask, description: e.target.value})}
+                    onKeyDown={(e) => {
+                      // Allow Enter for new lines, but Ctrl+Enter saves
+                      if (e.key === 'Enter' && !e.ctrlKey) {
+                        // Don't prevent default - allow normal Enter behavior (new line)
+                        return;
+                      }
+                    }}
                     className={styles.textarea}
                     placeholder="Task description"
                     maxLength={500}
@@ -1373,6 +1401,16 @@ const StructuredEntryForm = ({ selectedDate, onSave, existingData = null, onActi
               placeholder="Add a general note for the day..."
               value={newNote.content}
               onChange={(e) => setNewNote({...newNote, content: e.target.value})}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.ctrlKey) return; // Allow Enter for line breaks
+                if (e.key === 'Enter' && e.ctrlKey) {
+                  e.preventDefault();
+                  handleSaveNote();
+                } else if (e.key === 'Escape') {
+                  setShowNoteForm(false);
+                  setNewNote({ content: '', priority: 'medium' });
+                }
+              }}
               className={noteErrors.content ? styles.textareaError : styles.textarea}
               maxLength={1000}
             />
@@ -1396,6 +1434,15 @@ const StructuredEntryForm = ({ selectedDate, onSave, existingData = null, onActi
                   <textarea
                     value={editingNote.content}
                     onChange={(e) => setEditingNote({...editingNote, content: e.target.value})}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && !e.ctrlKey) return; // Allow Enter for line breaks
+                      if (e.key === 'Enter' && e.ctrlKey) {
+                        e.preventDefault();
+                        saveEditingNote();
+                      } else if (e.key === 'Escape') {
+                        cancelEditingNote();
+                      }
+                    }}
                     className={editNoteErrors.content ? styles.textareaError : styles.textarea}
                     placeholder="Note content"
                     maxLength={1000}
