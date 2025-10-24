@@ -302,6 +302,28 @@ const StructuredEntryForm = ({ selectedDate, onSave, existingData = null, onActi
     content: newNoteContentRef.current?.value || ''
   });
 
+  // Wrapper functions for Save buttons to read current values from refs
+  const handleSaveTask = () => {
+    const currentValues = getCurrentTaskValues();
+    console.log('=== DEBUG Save Button Task ===');
+    console.log('Current values from refs:', currentValues);
+    addTask(currentValues);
+  };
+
+  const handleSaveMeeting = () => {
+    const currentValues = getCurrentMeetingValues();
+    console.log('=== DEBUG Save Button Meeting ===');
+    console.log('Current values from refs:', currentValues);
+    addMeeting(currentValues);
+  };
+
+  const handleSaveNote = () => {
+    const currentValues = getCurrentNoteValues();
+    console.log('=== DEBUG Save Button Note ===');
+    console.log('Current values from refs:', currentValues);
+    addNote(currentValues);
+  };
+
   // Handle ESC and Ctrl+Enter keys for forms
   useEffect(() => {
     const handleKeyboardShortcuts = (event) => {
@@ -380,28 +402,29 @@ const StructuredEntryForm = ({ selectedDate, onSave, existingData = null, onActi
   // Funciones de validación
   const validateMeeting = (meeting) => {
     const errors = {};
-    if (!meeting.title.trim()) errors.title = true;
+    if (!meeting?.title || !meeting.title.trim()) errors.title = true;
     return errors;
   };
 
   const validateTask = (task) => {
     const errors = {};
-    if (!task.taskId.trim()) errors.taskId = true;
-    if (!task.department.trim()) errors.department = true;
+    if (!task?.taskId || !task.taskId.trim()) errors.taskId = true;
+    if (!task?.department || !task.department.trim()) errors.department = true;
     return errors;
   };
 
   const validateNote = (note) => {
     const errors = {};
-    if (!note.content.trim()) errors.content = true;
+    if (!note?.content || !note.content.trim()) errors.content = true;
     return errors;
   };
 
   // Agregar nueva note
   const addNote = (noteValues = null) => {
-    const valuesToValidate = noteValues || newNote;
+    const valuesToValidate = noteValues || newNote || { content: '' };
     console.log('=== DEBUG addNote ===');
     console.log('values to validate:', valuesToValidate);
+    console.log('newNote state:', newNote);
     
     const errors = validateNote(valuesToValidate);
     setNoteErrors(errors);
@@ -438,8 +461,9 @@ const StructuredEntryForm = ({ selectedDate, onSave, existingData = null, onActi
   // Agregar nuevo meeting
   const addMeeting = (meetingValues = null) => {
     console.log('=== DEBUG addMeeting ===');
-    const valuesToValidate = meetingValues || newMeeting;
+    const valuesToValidate = meetingValues || newMeeting || { title: '', duration: '', description: '', timeSubmitted: false };
     console.log('values to validate:', valuesToValidate);
+    console.log('newMeeting state:', newMeeting);
     
     const errors = validateMeeting(valuesToValidate);
     console.log('validation errors:', errors);
@@ -464,8 +488,9 @@ const StructuredEntryForm = ({ selectedDate, onSave, existingData = null, onActi
   // Agregar nueva task
   const addTask = (taskValues = null) => {
     console.log('=== DEBUG addTask ===');
-    const valuesToValidate = taskValues || newTask;
+    const valuesToValidate = taskValues || newTask || { taskId: '', department: '', status: 'IN_PROGRESS', duration: '', description: '', timeSubmitted: false };
     console.log('values to validate:', valuesToValidate);
+    console.log('newTask state:', newTask);
     
     const errors = validateTask(valuesToValidate);
     console.log('validation errors:', errors);
@@ -839,7 +864,7 @@ const StructuredEntryForm = ({ selectedDate, onSave, existingData = null, onActi
               </label>
             </div>
             <div className={styles.formButtons}>
-              <button onClick={addMeeting} className={styles.saveButton}>Save</button>
+              <button onClick={handleSaveMeeting} className={styles.saveButton}>Save</button>
               <button onClick={() => {
                 setShowMeetingForm(false);
                 setMeetingErrors({});
@@ -1025,7 +1050,7 @@ const StructuredEntryForm = ({ selectedDate, onSave, existingData = null, onActi
               </label>
             </div>
             <div className={styles.formButtons}>
-              <button onClick={addTask} className={styles.saveButton}>Save</button>
+              <button onClick={handleSaveTask} className={styles.saveButton}>Save</button>
               <button onClick={() => {
                 setShowTaskForm(false);
                 setTaskErrors({});
@@ -1249,7 +1274,7 @@ const StructuredEntryForm = ({ selectedDate, onSave, existingData = null, onActi
               className={noteErrors.content ? styles.textareaError : styles.textarea}
             />
             <div className={styles.formButtons}>
-              <button onClick={addNote} className={styles.saveButton}>Save</button>
+              <button onClick={handleSaveNote} className={styles.saveButton}>Save</button>
               <button onClick={() => {
                 setShowNoteForm(false);
                 setNoteErrors({});
@@ -1303,20 +1328,6 @@ const StructuredEntryForm = ({ selectedDate, onSave, existingData = null, onActi
         </div>
       </div>
 
-      {/* Resumen del día */}
-      {!dayEntry.isEmpty() && (
-        <div className={styles.summary}>
-          <h4>📊 Day Summary</h4>
-          <div className={styles.summaryGrid}>
-            <div>Meetings: {dayEntry.meetings.length} ({dayEntry.getFormattedMeetingTime()})</div>
-            <div>Tasks: {dayEntry.tasks.length} ({dayEntry.getFormattedTaskTime()})</div>
-            <div>Total time: {dayEntry.getFormattedTotalTime()}</div>
-            <div>Completed: {dayEntry.getTaskStatusCount().DONE}</div>
-            <div>Time Submitted: {dayEntry.getTotalSubmitCount().submitted}/{dayEntry.getTotalSubmitCount().total} (M: {dayEntry.getMeetingSubmitCount().submitted}, T: {dayEntry.getTaskSubmitCount().submitted})</div>
-            <div>Notes: {dayEntry.notes.length}</div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

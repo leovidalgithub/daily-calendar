@@ -14,11 +14,12 @@
 .searchInput {
   width: 100%;
   padding: 12px 40px 12px 16px;
-  border: 2px solid #e5e7eb;
+  border: 2px solid var(--border-color);
   border-radius: 8px;
   font-size: 14px;
   transition: all 0.3s ease;
-  background: white;
+  background: var(--bg-primary);
+  color: var(--text-primary);
 }
 
 .searchInput:focus {
@@ -83,8 +84,8 @@
 }
 
 .modalContent {
-  background: #ffffff !important;
-  background-color: #ffffff !important;
+  background: var(--bg-primary) !important;
+  background-color: var(--bg-primary) !important;
   border-radius: 12px !important;
   max-width: 600px !important;
   width: 100% !important;
@@ -102,9 +103,9 @@
   justify-content: space-between !important;
   align-items: center !important;
   padding: 20px 24px 16px !important;
-  border-bottom: 1px solid #e5e7eb !important;
-  background: #ffffff !important;
-  background-color: #ffffff !important;
+  border-bottom: 1px solid var(--border-color) !important;
+  background: var(--bg-primary) !important;
+  background-color: var(--bg-primary) !important;
   border-radius: 12px 12px 0 0 !important;
   position: relative !important;
   z-index: 10001 !important;
@@ -115,7 +116,7 @@
   margin: 0 !important;
   font-size: 18px !important;
   font-weight: 600 !important;
-  color: #1f2937 !important;
+  color: var(--text-primary) !important;
 }
 
 .modalCloseButton {

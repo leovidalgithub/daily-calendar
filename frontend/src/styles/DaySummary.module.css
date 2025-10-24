@@ -1,0 +1,161 @@
+/* DaySummary.module.css */
+.summaryContainer {
+  background: var(--bg-primary);
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: 0 2px 10px var(--shadow-light);
+  margin-bottom: 20px;
+  border: 1px solid var(--border-color);
+}
+
+.dateHeader {
+  margin-bottom: 15px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.dateHeader h3 {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 1.1em;
+  font-weight: 600;
+  text-align: center;
+}
+
+.summaryContent {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.summaryStats {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.statItem {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  flex: 1;
+  padding: 8px;
+  background: var(--bg-secondary);
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+  transition: all 0.2s ease;
+}
+
+.statItem:hover {
+  background: var(--bg-primary);
+  box-shadow: 0 2px 8px var(--shadow-light);
+}
+
+.statIcon {
+  font-size: 20px;
+  margin-bottom: 4px;
+}
+
+.statLabel {
+  font-size: 0.85em;
+  color: var(--text-secondary);
+  margin-bottom: 2px;
+}
+
+.statValue {
+  font-size: 1.2em;
+  font-weight: bold;
+  color: var(--text-primary);
+}
+
+.statTime {
+  font-size: 0.8em;
+  color: var(--text-secondary);
+  margin-top: 2px;
+}
+
+.totalSummary {
+  text-align: center;
+  padding: 12px;
+  background: var(--bg-secondary);
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.totalText {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.totalText strong {
+  color: var(--text-primary);
+  font-size: 0.95em;
+}
+
+.remainingTime {
+  color: #f59e0b;
+  font-weight: 600;
+  font-size: 0.9em;
+}
+
+.completeTime {
+  color: #10b981;
+  font-weight: 600;
+  font-size: 0.9em;
+}
+
+/* Barra de progreso */
+.progressBarContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.progressBarTrack {
+  width: 100%;
+  height: 8px;
+  background: var(--border-color);
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.progressBarFill {
+  height: 100%;
+  background: linear-gradient(90deg, #10b981, #22c55e);
+  border-radius: 4px;
+  transition: width 0.3s ease;
+  box-shadow: 0 1px 3px rgba(16, 185, 129, 0.3);
+}
+
+.progressText {
+  font-size: 0.8em;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+/* Responsive design */
+@media (max-width: 400px) {
+  .summaryStats {
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .statItem {
+    flex-direction: row;
+    text-align: left;
+    justify-content: flex-start;
+    gap: 8px;
+  }
+  
+  .statIcon {
+    margin-bottom: 0;
+  }
+}

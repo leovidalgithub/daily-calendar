@@ -2,6 +2,9 @@ import { useState, useEffect, useRef } from "react";
 import CalendarComponent from "./components/Calendar";
 import StructuredEntryForm from "./components/StructuredEntryForm";
 import SearchField from "./components/SearchField";
+import DaySummary from "./components/DaySummary";
+import ThemeToggle from "./components/ThemeToggle";
+import { ThemeProvider } from "./contexts/ThemeContext";
 import { API_BASE_URL } from "./config/api";
 import { Toaster } from 'react-hot-toast';
 import "./App.css";
@@ -111,18 +114,24 @@ function App() {
         const data = await response.json();
         
         // Manejar datos estructurados correctamente
-        const structuredData = data.structured_entries || null;
+        const structuredData = data.structured_entries || [];
+        console.log('=== DEBUG loadContentForDate ===');
+        console.log('raw data from server:', data);
+        console.log('structured_entries:', data.structured_entries);
+        console.log('final structuredData:', structuredData);
         setStructuredEntries(structuredData);
       } else if (response.status === 404) {
         // No hay contenido para esta fecha
-        setStructuredEntries(null);
+        console.log('=== DEBUG loadContentForDate ===');
+        console.log('404 - no data found');
+        setStructuredEntries([]);
       } else {
         console.error("Error loading content:", response.statusText);
-        setStructuredEntries(null);
+        setStructuredEntries([]);
       }
     } catch (error) {
       console.error("Error connecting to server:", error);
-      setStructuredEntries(null);
+      setStructuredEntries([]);
     } finally {
       setIsLoading(false);
     }
@@ -175,67 +184,94 @@ function App() {
     setHasActiveForms(hasActive);
   };
 
-  return (
-    <div className="app">
-      <main className="app-main">
-        <div className="app-grid">
-          <div className="left-panel">
-            <header className="app-header">
-              <h1>📅 Daily Calendar</h1>
-            </header>
+  // Get current day entry data for summary
+  const getCurrentDayEntry = () => {
+    // structuredEntries ya es el objeto del día actual, no un array para buscar
+    if (!structuredEntries || typeof structuredEntries !== 'object') {
+      return {
+        meetings: [],
+        tasks: [],
+        notes: []
+      };
+    }
+    
+    // Debug: Ver qué datos tenemos
+    console.log('=== DEBUG getCurrentDayEntry FIXED ===');
+    console.log('structuredEntries:', structuredEntries);
+    console.log('returning directly:', structuredEntries);
+    
+    return structuredEntries;
+  };
 
-            <div className="calendar-section">
-              <CalendarComponent
-                selectedDate={selectedDate}
-                onDateChange={handleDateChange}
-              />
-              
-              <SearchField
-                ref={searchFieldRef}
-                onResultSelect={handleSearchResultSelect}
-              />
+  return (
+    <ThemeProvider>
+      <div className="app">
+        <ThemeToggle />
+        <main className="app-main">
+          <div className="app-grid">
+            <div className="left-panel">
+              <header className="app-header">
+                <h1>📅 Daily Calendar</h1>
+              </header>
+
+              <div className="calendar-section">
+                <CalendarComponent
+                  selectedDate={selectedDate}
+                  onDateChange={handleDateChange}
+                />
+                
+                <SearchField
+                  ref={searchFieldRef}
+                  onResultSelect={handleSearchResultSelect}
+                />
+                
+                <DaySummary
+                  selectedDate={selectedDate}
+                  dayEntry={getCurrentDayEntry()}
+                />
+              </div>
+            </div>
+
+            <div className="right-panel">
+              {isLoading ? (
+                <div className="loading">Cargando...</div>
+              ) : (
+                <StructuredEntryForm
+                  selectedDate={selectedDate}
+                  onSave={handleStructuredSave}
+                  existingData={structuredEntries}
+                  onActiveFormsChange={handleActiveFormsChange}
+                />
+              )}
             </div>
           </div>
-
-          <div className="right-panel">
-            {isLoading ? (
-              <div className="loading">Cargando...</div>
-            ) : (
-              <StructuredEntryForm
-                selectedDate={selectedDate}
-                onSave={handleStructuredSave}
-                existingData={structuredEntries}
-                onActiveFormsChange={handleActiveFormsChange}
-              />
-            )}
-          </div>
-        </div>
-      </main>
-      <Toaster 
-        position="top-center"
-        toastOptions={{
-          duration: 4000,
-          style: {
-            background: '#363636',
-            color: '#fff',
-          },
-          success: {
+        </main>
+        <Toaster 
+          position="top-center"
+          toastOptions={{
             duration: 4000,
-            iconTheme: {
-              primary: '#0cb64aff',
-              secondary: '#fff',
+            style: {
+              background: '#363636',
+              color: '#fff',
             },
-          },
-          error: {
-            duration: 4000,
-            iconTheme: {
-              primary: '#ef4444',
-              secondary: '#fff',
+            success: {
+              duration: 4000,
+              iconTheme: {
+                primary: '#0cb64aff',
+                secondary: '#fff',
+              },
             },
-          },
-        }}
-      />
-    </div>
+            error: {
+              duration: 4000,
+              iconTheme: {
+                primary: '#ef4444',
+                secondary: '#fff',
+              },
+            },
+          }}
+        />
+      </div>
+    </ThemeProvider>
   );
 }
 

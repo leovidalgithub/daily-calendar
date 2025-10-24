@@ -5,9 +5,10 @@
   height: 100%;
   overflow-y: auto;
   overflow-x: hidden;
-  background: #fafafa;
+  background: var(--bg-primary);
   border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 12px var(--shadow-light);
+  border: 1px solid var(--border-color);
   /* Ocultar scrollbar pero mantener funcionalidad */
   scrollbar-width: none; /* Firefox */
   -ms-overflow-style: none; /* Internet Explorer 10+ */
@@ -19,14 +20,14 @@
 }
 
 .header {
-  border-bottom: 2px solid #e0e0e0;
+  border-bottom: 2px solid var(--border-color);
   padding-bottom: 15px;
   margin-bottom: 15px;
 }
 
 .header h2 {
   margin: 0 0 10px 0;
-  color: #333;
+  color: var(--text-primary);
   font-size: 1.4em;
   text-transform: capitalize;
 }
@@ -40,10 +41,11 @@
 
 .section {
   margin-bottom: 15px;
-  background: white;
+  background: var(--bg-secondary);
   border-radius: 8px;
   padding: 15px 20px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  box-shadow: 0 2px 4px var(--shadow-light);
+  border: 1px solid var(--border-color);
 }
 
 .sectionHeader {
@@ -51,13 +53,13 @@
   justify-content: space-between;
   align-items: center;
   margin-bottom: 15px;
-  border-bottom: 1px solid #eee;
+  border-bottom: 1px solid var(--border-color);
   padding-bottom: 10px;
 }
 
 .sectionHeader h3 {
   margin: 0;
-  color: #333;
+  color: var(--text-primary);
   font-size: 1.2em;
 }
 
@@ -78,8 +80,8 @@
 
 /* Formularios */
 .form {
-  background: #f9f9f9;
-  border: 1px solid #ddd;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
   border-radius: 6px;
   padding: 15px;
   margin-bottom: 15px;
@@ -114,12 +116,12 @@
 }
 
 .checkbox:has(input[type="checkbox"]:disabled) .checkboxLabel {
-  color: #999;
+  color: var(--text-secondary);
   opacity: 0.6;
 }
 
 .checkboxLabel {
-  color: #333;
+  color: var(--text-primary);
   user-select: none;
 }
 
@@ -131,11 +133,13 @@
 }
 
 .input, .select, .textarea {
-  border: 1px solid #ccc;
+  border: 1px solid var(--border-color);
   border-radius: 4px;
   padding: 8px 12px;
   font-size: 0.9em;
   font-family: inherit;
+  background: var(--bg-primary);
+  color: var(--text-primary);
 }
 
 .input {
@@ -144,18 +148,22 @@
 }
 
 .durationInput {
-  border: 1px solid #ccc;
+  border: 1px solid var(--border-color);
   border-radius: 4px;
   padding: 8px 12px;
   font-size: 0.9em;
   width: 120px;
   font-family: inherit;
+  background: var(--bg-primary);
+  color: var(--text-primary);
 }
 
 .taskIdInput {
-  border: 1px solid #ccc;
+  border: 1px solid var(--border-color);
   border-radius: 4px;
   padding: 8px 12px;
+  background: var(--bg-primary);
+  color: var(--text-primary);
   font-size: 0.9em;
   width: 120px;
   font-family: inherit;
@@ -283,8 +291,8 @@
 }
 
 .entry {
-  background: #f8f9fa;
-  border: 1px solid #e9ecef;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
   border-radius: 6px;
   padding: 12px;
   transition: box-shadow 0.2s;
@@ -295,8 +303,8 @@
 }
 
 .entryClickable {
-  background: #f8f9fa;
-  border: 1px solid #e9ecef;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
   border-radius: 6px;
   padding: 12px;
   cursor: pointer;
@@ -304,7 +312,7 @@
 }
 
 .entryClickable:hover {
-  background: #f0f8ff;
+  background: var(--bg-secondary);
   border-color: #1976d2;
   box-shadow: 0 4px 12px rgba(25, 118, 210, 0.2);
   transform: translateY(-2px);
@@ -318,7 +326,7 @@
 }
 
 .entryTitle {
-  color: #333;
+  color: var(--text-primary);
   flex: 1;
 }
 
@@ -431,7 +439,7 @@
 
 /* Formularios de edición */
 .editForm {
-  background: #f0f8ff;
+  background: var(--bg-primary);
   border: 1px solid #2196F3;
   border-radius: 6px;
   padding: 15px;
@@ -439,11 +447,11 @@
 
 .entryDescription {
   margin-top: 8px;
-  color: #555;
+  color: var(--text-secondary);
   font-size: 0.9em;
   line-height: 1.4;
   padding-left: 15px;
-  border-left: 3px solid #e0e0e0;
+  border-left: 3px solid var(--border-color);
 }
 
 /* Resumen del día */
@@ -509,10 +517,11 @@
 /* Estilos para secciones vacías (grayed-out) */
 .sectionEmpty {
   margin-bottom: 15px;
-  background: #f5f5f5;
+  background: var(--bg-secondary);
   border-radius: 8px;
   padding: 15px 20px;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+  box-shadow: 0 1px 2px var(--shadow-light);
+  border: 1px solid var(--border-color);
   opacity: 0.6;
   transition: opacity 0.3s ease;
 }
@@ -522,7 +531,7 @@
 }
 
 .sectionEmpty .sectionHeader h3 {
-  color: #999;
+  color: var(--text-muted);
 }
 
 /* Los botones Add mantienen su color verde normal */
