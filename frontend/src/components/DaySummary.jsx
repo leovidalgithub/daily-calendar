@@ -48,6 +48,7 @@ const DaySummary = ({ selectedDate, dayEntry }) => {
   const totalMinutes = dayEntryInstance.getTotalDayTime();
   const remainingMinutes = Math.max(0, FULL_DAY_MINUTES - totalMinutes);
   const progressPercentage = Math.min(100, (totalMinutes / FULL_DAY_MINUTES) * 100);
+  const isOvertime = totalMinutes > FULL_DAY_MINUTES;
   
   // Formatear tiempo restante
   const formatRemainingTime = (minutes) => {
@@ -112,13 +113,26 @@ const DaySummary = ({ selectedDate, dayEntry }) => {
             <div className={styles.progressBarTrack}>
               <div 
                 className={styles.progressBarFill}
-                style={{ width: `${progressPercentage}%` }}
+                style={{ 
+                  width: `${progressPercentage}%`,
+                  background: isOvertime 
+                    ? 'linear-gradient(90deg, #f97316, #ea580c)' 
+                    : remainingMinutes === 0 
+                      ? 'linear-gradient(90deg, #10b981, #22c55e)'
+                      : 'linear-gradient(90deg, #3b82f6, #1d4ed8)'
+                }}
               ></div>
             </div>
             <div className={styles.progressText}>
               {Math.round(progressPercentage)}% of 7h30m
             </div>
           </div>
+          
+          {isOvertime && (
+            <div style={{ color: '#f97316', fontWeight: 'bold', textAlign: 'center', marginTop: '8px' }}>
+              ⚠️ Working overtime beyond 7h30m
+            </div>
+          )}
         </div>
       </div>
     </div>
