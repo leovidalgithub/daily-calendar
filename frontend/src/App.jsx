@@ -4,6 +4,7 @@ import StructuredEntryForm from "./components/StructuredEntryForm";
 import SearchField from "./components/SearchField";
 import DaySummary from "./components/DaySummary";
 import ThemeToggle from "./components/ThemeToggle";
+import ExportButton from "./components/ExportButton";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { API_BASE_URL } from "./config/api";
 import { Toaster } from 'react-hot-toast';
@@ -115,15 +116,9 @@ function App() {
         
         // Manejar datos estructurados correctamente
         const structuredData = data.structured_entries || [];
-        console.log('=== DEBUG loadContentForDate ===');
-        console.log('raw data from server:', data);
-        console.log('structured_entries:', data.structured_entries);
-        console.log('final structuredData:', structuredData);
         setStructuredEntries(structuredData);
       } else if (response.status === 404) {
         // No hay contenido para esta fecha
-        console.log('=== DEBUG loadContentForDate ===');
-        console.log('404 - no data found');
         setStructuredEntries([]);
       } else {
         console.error("Error loading content:", response.statusText);
@@ -195,11 +190,6 @@ function App() {
       };
     }
     
-    // Debug: Ver qué datos tenemos
-    console.log('=== DEBUG getCurrentDayEntry FIXED ===');
-    console.log('structuredEntries:', structuredEntries);
-    console.log('returning directly:', structuredEntries);
-    
     return structuredEntries;
   };
 
@@ -270,6 +260,8 @@ function App() {
             },
           }}
         />
+        
+        <ExportButton />
       </div>
     </ThemeProvider>
   );

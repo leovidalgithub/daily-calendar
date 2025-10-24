@@ -6,12 +6,23 @@ import TaskIndicators from './TaskIndicators.jsx';
 import * as TaskAnalytics from '../utils/taskAnalytics.js';
 import { API_BASE_URL } from '../config/api.js';
 import toast from 'react-hot-toast';
+import Calendar from 'react-calendar';
+
+// Helper function to generate department options
+const generateDepartmentOptions = () => {
+  const options = [];
+  for (let i = 1; i <= 30; i++) {
+    const id = `it-${i.toString().padStart(2, '0')}`;
+    options.push({ value: id, label: id.toUpperCase() });
+  }
+  return options;
+};
 
 const StructuredEntryForm = ({ selectedDate, onSave, existingData = null, onActiveFormsChange }) => {
   const [dayEntry, setDayEntry] = useState(new DayEntry(selectedDate));
   
   // Estados para formularios de nuevas entradas
-  const [newMeeting, setNewMeeting] = useState({ title: '', duration: '', description: '', timeSubmitted: false });
+  const [newMeeting, setNewMeeting] = useState({ title: '', duration: '', description: '', departmentId: 'it-21', timeSubmitted: false });
   const [newTask, setNewTask] = useState({ taskId: '', department: '', status: 'IN_PROGRESS', duration: '', description: '', timeSubmitted: false });
   const [newNote, setNewNote] = useState({ content: '' });
   
@@ -57,8 +68,11 @@ const StructuredEntryForm = ({ selectedDate, onSave, existingData = null, onActi
   const [taskAnalytics, setTaskAnalytics] = useState({});
   const [loadingAnalytics, setLoadingAnalytics] = useState(false);
 
-  // Estado para fechas disponibles para mover tasks
-  const [availableDates, setAvailableDates] = useState([]);
+  // Estado para mini calendario de mover task
+  const [showMoveCalendar, setShowMoveCalendar] = useState(false);
+  
+  // Estado para mini calendario de copiar task
+  const [showCopyCalendar, setShowCopyCalendar] = useState(false);
 
   // Estado para manejar clicks y double-clicks
   const [clickTimeout, setClickTimeout] = useState(null);
@@ -155,42 +169,7 @@ const StructuredEntryForm = ({ selectedDate, onSave, existingData = null, onActi
     loadTaskAnalytics();
   }, [dayEntry.tasks]);
 
-  // Cargar fechas disponibles para mover tasks
-  useEffect(() => {
-    const loadAvailableDates = async () => {
-      try {
-        const response = await fetch(`${API_BASE_URL}/entries`);
-        if (response.ok) {
-          const data = await response.json();
-          
-          // Debug: veamos qué está devolviendo el API
-          console.log('API Response:', data);
-          console.log('Entries:', data.entries);
-          
-          // El API devuelve { entries: [...] }, no un array directo
-          const entries = data.entries || [];
-          
-          // Extraer fechas únicas y ordenarlas
-          const dates = entries.map(entry => entry.date).sort();
-          console.log('Extracted dates:', dates);
-          
-          // Agregar fecha actual si no está en la lista
-          const today = new Date().toISOString().split('T')[0];
-          if (!dates.includes(today)) {
-            dates.push(today);
-            dates.sort();
-          }
-          
-          setAvailableDates(dates);
-        }
-      } catch (error) {
-        console.error('Error loading available dates:', error);
-        setAvailableDates([]);
-      }
-    };
 
-    loadAvailableDates();
-  }, []);
 
   // Cleanup timeout on unmount
   useEffect(() => {
@@ -305,22 +284,16 @@ const StructuredEntryForm = ({ selectedDate, onSave, existingData = null, onActi
   // Wrapper functions for Save buttons to read current values from refs
   const handleSaveTask = () => {
     const currentValues = getCurrentTaskValues();
-    console.log('=== DEBUG Save Button Task ===');
-    console.log('Current values from refs:', currentValues);
     addTask(currentValues);
   };
 
   const handleSaveMeeting = () => {
     const currentValues = getCurrentMeetingValues();
-    console.log('=== DEBUG Save Button Meeting ===');
-    console.log('Current values from refs:', currentValues);
     addMeeting(currentValues);
   };
 
   const handleSaveNote = () => {
     const currentValues = getCurrentNoteValues();
-    console.log('=== DEBUG Save Button Note ===');
-    console.log('Current values from refs:', currentValues);
     addNote(currentValues);
   };
 
@@ -334,27 +307,18 @@ const StructuredEntryForm = ({ selectedDate, onSave, existingData = null, onActi
         // For new forms, get current values from refs and validate/save directly
         if (showTaskForm) {
           const currentValues = getCurrentTaskValues();
-          console.log('=== DEBUG Ctrl+Enter Task ===');
-          console.log('Current values from refs:', currentValues);
-          
           addTask(currentValues);
           return;
         }
         
         if (showMeetingForm) {
           const currentValues = getCurrentMeetingValues();
-          console.log('=== DEBUG Ctrl+Enter Meeting ===');
-          console.log('Current values from refs:', currentValues);
-          
           addMeeting(currentValues);
           return;
         }
         
         if (showNoteForm) {
           const currentValues = getCurrentNoteValues();
-          console.log('=== DEBUG Ctrl+Enter Note ===');
-          console.log('Current values from refs:', currentValues);
-          
           addNote(currentValues);
           return;
         }
@@ -422,9 +386,6 @@ const StructuredEntryForm = ({ selectedDate, onSave, existingData = null, onActi
   // Agregar nueva note
   const addNote = (noteValues = null) => {
     const valuesToValidate = noteValues || newNote || { content: '' };
-    console.log('=== DEBUG addNote ===');
-    console.log('values to validate:', valuesToValidate);
-    console.log('newNote state:', newNote);
     
     const errors = validateNote(valuesToValidate);
     setNoteErrors(errors);
@@ -460,21 +421,17 @@ const StructuredEntryForm = ({ selectedDate, onSave, existingData = null, onActi
 
   // Agregar nuevo meeting
   const addMeeting = (meetingValues = null) => {
-    console.log('=== DEBUG addMeeting ===');
-    const valuesToValidate = meetingValues || newMeeting || { title: '', duration: '', description: '', timeSubmitted: false };
-    console.log('values to validate:', valuesToValidate);
-    console.log('newMeeting state:', newMeeting);
+    const valuesToValidate = meetingValues || newMeeting || { title: '', duration: '', description: '', departmentId: 'it-21', timeSubmitted: false };
     
     const errors = validateMeeting(valuesToValidate);
-    console.log('validation errors:', errors);
     
     setMeetingErrors(errors);
     
     if (Object.keys(errors).length === 0) {
-      const meeting = new Meeting(null, valuesToValidate.title, valuesToValidate.duration, valuesToValidate.description, valuesToValidate.timeSubmitted);
+      const meeting = new Meeting(null, valuesToValidate.title, valuesToValidate.duration, valuesToValidate.description, valuesToValidate.timeSubmitted, valuesToValidate.departmentId);
       dayEntry.addMeeting(meeting);
       setDayEntry(new DayEntry(dayEntry.date, [...dayEntry.meetings], [...dayEntry.tasks], [...dayEntry.notes]));
-      setNewMeeting({ title: '', duration: '', description: '', timeSubmitted: false });
+      setNewMeeting({ title: '', duration: '', description: '', departmentId: 'it-21', timeSubmitted: false });
       setShowMeetingForm(false);
       onSave(dayEntry.toJSON());
       
@@ -487,13 +444,9 @@ const StructuredEntryForm = ({ selectedDate, onSave, existingData = null, onActi
 
   // Agregar nueva task
   const addTask = (taskValues = null) => {
-    console.log('=== DEBUG addTask ===');
     const valuesToValidate = taskValues || newTask || { taskId: '', department: '', status: 'IN_PROGRESS', duration: '', description: '', timeSubmitted: false };
-    console.log('values to validate:', valuesToValidate);
-    console.log('newTask state:', newTask);
     
     const errors = validateTask(valuesToValidate);
-    console.log('validation errors:', errors);
     
     setTaskErrors(errors);
     
@@ -573,7 +526,8 @@ const StructuredEntryForm = ({ selectedDate, onSave, existingData = null, onActi
       title: meeting.title,
       duration: meeting.duration,
       description: meeting.description,
-      timeSubmitted: meeting.timeSubmitted
+      timeSubmitted: meeting.timeSubmitted,
+      departmentId: meeting.departmentId || 'it-21'
     });
   };
 
@@ -589,6 +543,7 @@ const StructuredEntryForm = ({ selectedDate, onSave, existingData = null, onActi
           dayEntry.meetings[meetingIndex].duration = editingMeeting.duration;
           dayEntry.meetings[meetingIndex].description = editingMeeting.description;
           dayEntry.meetings[meetingIndex].timeSubmitted = editingMeeting.timeSubmitted;
+          dayEntry.meetings[meetingIndex].departmentId = editingMeeting.departmentId;
           
           setDayEntry(new DayEntry(dayEntry.date, [...dayEntry.meetings], [...dayEntry.tasks], [...dayEntry.notes]));
           setEditingMeeting(null);
@@ -657,7 +612,6 @@ const StructuredEntryForm = ({ selectedDate, onSave, existingData = null, onActi
   // Función para mover una task a otra fecha
   const moveTaskToDate = async (taskToMove, targetDate) => {
     try {
-      console.log('Moving task:', taskToMove, 'to date:', targetDate);
       
       // 1. Remover la task del día actual
       const updatedTasks = dayEntry.tasks.filter(t => t.id !== taskToMove.id);
@@ -665,16 +619,13 @@ const StructuredEntryForm = ({ selectedDate, onSave, existingData = null, onActi
       
       // 2. Guardar el día actual sin la task (usando el flujo normal)
       await onSave(updatedDayEntry.toJSON());
-      console.log('✅ Source day updated (task removed)');
       
       // 3. Cargar la entrada del día objetivo
       const response = await fetch(`${API_BASE_URL}/entry/${targetDate}`);
-      console.log('Load target date response:', response.status);
       
       let targetDayData = null;
       if (response.ok) {
         targetDayData = await response.json();
-        console.log('Target day data loaded:', targetDayData);
       }
       
       // 4. Crear o actualizar la entrada del día objetivo
@@ -693,10 +644,7 @@ const StructuredEntryForm = ({ selectedDate, onSave, existingData = null, onActi
         taskToMove.timeSubmitted
       );
       
-      console.log('New task created:', newTask);
-      console.log('Target day before adding task:', targetDayEntry.tasks.length, 'tasks');
       targetDayEntry.tasks.push(newTask);
-      console.log('Target day after adding task:', targetDayEntry.tasks.length, 'tasks');
       
       // 5. Guardar el día objetivo (usando el mismo flujo que para agregar tasks)
       // IMPORTANTE: Usar la misma lógica que App.jsx
@@ -712,8 +660,6 @@ const StructuredEntryForm = ({ selectedDate, onSave, existingData = null, onActi
           entryType: "structured",
         }),
       });
-      
-      console.log('Save response:', saveResponse.status);
       
       if (saveResponse.ok) {
         // Actualizar la vista actual
@@ -740,6 +686,76 @@ const StructuredEntryForm = ({ selectedDate, onSave, existingData = null, onActi
       console.error('Error moving task:', error);
       // Usar toast para mostrar error
       toast.error('Failed to move task. Please try again.', {
+        icon: '❌',
+      });
+    }
+  };
+
+  // Función para copiar una task a otra fecha
+  const copyTaskToDate = async (taskToCopy, targetDate) => {
+    try {
+      // 1. Cargar datos del día objetivo
+      const response = await fetch(`${API_BASE_URL}/entry/${targetDate}`);
+      
+      let targetDayData = null;
+      if (response.ok) {
+        targetDayData = await response.json();
+      }
+      
+      // 2. Crear o actualizar la entrada del día objetivo
+      const targetDayEntry = targetDayData && targetDayData.structured_entries
+        ? DayEntry.fromJSON(targetDayData.structured_entries)
+        : new DayEntry(targetDate);
+      
+      // Crear nueva task (copia) sin el ID (para evitar conflictos)
+      const newTask = new Task(
+        null, // id
+        taskToCopy.taskId,
+        taskToCopy.department,
+        taskToCopy.status,
+        taskToCopy.duration,
+        taskToCopy.description,
+        taskToCopy.timeSubmitted
+      );
+      
+      targetDayEntry.tasks.push(newTask);
+      
+      // 3. Guardar el día objetivo
+      const saveResponse = await fetch(`${API_BASE_URL}/entry`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          date: targetDate,
+          content: null,
+          structuredEntries: targetDayEntry.toJSON(),
+        }),
+      });
+
+      if (saveResponse.ok) {
+        // Cerrar modo edición
+        setEditingTask(null);
+        
+        // Mostrar toast de éxito con información de la fecha de destino
+        const formatDateForToast = (dateStr) => {
+          const [year, month, day] = dateStr.split('-');
+          const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+                             'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+          const monthName = monthNames[parseInt(month) - 1];
+          return `${monthName} ${parseInt(day)}, ${year}`;
+        };
+        
+        toast.success(`Task #${taskToCopy.taskId} copied to ${formatDateForToast(targetDate)}`);
+      } else {
+        const errorText = await saveResponse.text();
+        console.error('Copy failed:', errorText);
+        throw new Error('Failed to copy task to target date: ' + errorText);
+      }
+      
+    } catch (error) {
+      console.error('Error copying task:', error);
+      toast.error('Failed to copy task. Please try again.', {
         icon: '❌',
       });
     }
@@ -825,7 +841,19 @@ const StructuredEntryForm = ({ selectedDate, onSave, existingData = null, onActi
                 value={newMeeting.title}
                 onChange={(e) => setNewMeeting({...newMeeting, title: e.target.value})}
                 className={meetingErrors.title ? styles.inputError : styles.input}
+                maxLength={120}
               />
+              <select
+                value={newMeeting.departmentId}
+                onChange={(e) => setNewMeeting({...newMeeting, departmentId: e.target.value})}
+                className={styles.select}
+              >
+                {generateDepartmentOptions().map(option => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
               <DurationSelect
                 ref={newMeetingDurationRef}
                 value={newMeeting.duration}
@@ -847,6 +875,7 @@ const StructuredEntryForm = ({ selectedDate, onSave, existingData = null, onActi
               value={newMeeting.description}
               onChange={(e) => setNewMeeting({...newMeeting, description: e.target.value})}
               className={styles.textarea}
+              maxLength={500}
             />
             <div className={styles.checkboxRow}>
               <label 
@@ -863,7 +892,7 @@ const StructuredEntryForm = ({ selectedDate, onSave, existingData = null, onActi
                 <span className={styles.checkboxLabel}>Time submitted to DevOps</span>
               </label>
             </div>
-            <div className={styles.formButtons}>
+            <div className={styles.simpleButtons}>
               <button onClick={handleSaveMeeting} className={styles.saveButton}>Save</button>
               <button onClick={() => {
                 setShowMeetingForm(false);
@@ -892,7 +921,19 @@ const StructuredEntryForm = ({ selectedDate, onSave, existingData = null, onActi
                       onChange={(e) => setEditingMeeting({...editingMeeting, title: e.target.value})}
                       className={editMeetingErrors.title ? styles.inputError : styles.input}
                       placeholder="Meeting title"
+                      maxLength={120}
                     />
+                    <select
+                      value={editingMeeting.departmentId || 'it-21'}
+                      onChange={(e) => setEditingMeeting({...editingMeeting, departmentId: e.target.value})}
+                      className={styles.select}
+                    >
+                      {generateDepartmentOptions().map(option => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
                     <DurationSelect
                       value={editingMeeting.duration}
                       onChange={(e) => {
@@ -912,6 +953,7 @@ const StructuredEntryForm = ({ selectedDate, onSave, existingData = null, onActi
                     onChange={(e) => setEditingMeeting({...editingMeeting, description: e.target.value})}
                     className={styles.textarea}
                     placeholder="Description"
+                    maxLength={500}
                   />
                   <div className={styles.checkboxRow}>
                     <label 
@@ -927,7 +969,7 @@ const StructuredEntryForm = ({ selectedDate, onSave, existingData = null, onActi
                       <span className={styles.checkboxLabel}>Time submitted to DevOps</span>
                     </label>
                   </div>
-                  <div className={styles.formButtons}>
+                  <div className={styles.simpleButtons}>
                     <button onClick={(e) => {
                       e.stopPropagation();
                       saveEditingMeeting();
@@ -990,6 +1032,7 @@ const StructuredEntryForm = ({ selectedDate, onSave, existingData = null, onActi
                 value={newTask.taskId}
                 onChange={(e) => setNewTask({...newTask, taskId: e.target.value})}
                 className={taskErrors.taskId ? styles.taskIdInputError : styles.taskIdInput}
+                maxLength={8}
               />
               <select
                 ref={newTaskDepartmentRef}
@@ -1033,6 +1076,7 @@ const StructuredEntryForm = ({ selectedDate, onSave, existingData = null, onActi
               value={newTask.description}
               onChange={(e) => setNewTask({...newTask, description: e.target.value})}
               className={styles.textarea}
+              maxLength={500}
             />
             <div className={styles.checkboxRow}>
               <label 
@@ -1078,6 +1122,7 @@ const StructuredEntryForm = ({ selectedDate, onSave, existingData = null, onActi
                       onChange={(e) => setEditingTask({...editingTask, taskId: e.target.value})}
                       className={editTaskErrors.taskId ? styles.taskIdInputError : styles.taskIdInput}
                       placeholder="Task ID"
+                      maxLength={8}
                     />
                     <select
                       value={editingTask.department}
@@ -1111,71 +1156,14 @@ const StructuredEntryForm = ({ selectedDate, onSave, existingData = null, onActi
                       }}
                       className={styles.select}
                     />
-                    <select
-                      onChange={(e) => {
-                        if (e.target.value) {
-                          moveTaskToDate(editingTask, e.target.value);
-                        }
-                        e.target.value = ''; // Reset selection
-                      }}
-                      className={styles.select}
-                      defaultValue=""
-                    >
-                      <option value="">Move this Task to date</option>
-                      {availableDates
-                        .filter(date => {
-                          // No mostrar la fecha actual donde está la task
-                          // Usar formateo seguro sin timezone
-                          const selectedDateNormalized = selectedDate.getFullYear() + '-' + 
-                                 String(selectedDate.getMonth() + 1).padStart(2, '0') + '-' + 
-                                 String(selectedDate.getDate()).padStart(2, '0');
-                          
-                          console.log('🔍 Filter debug:', {
-                            selectedDateNormalized,
-                            availableDate: date,
-                            shouldInclude: date !== selectedDateNormalized
-                          });
-                          
-                          return date !== selectedDateNormalized;
-                        })
-                        .map(date => {
-                        // Formateo seguro de fecha sin problemas de timezone
-                        const formatSafeDate = (dateStr) => {
-                          if (!dateStr) return 'Invalid Date';
-                          
-                          // Parsing manual para evitar problemas de zona horaria
-                          const [year, month, day] = dateStr.split('-');
-                          if (year && month && day) {
-                            // Mapear meses a nombres abreviados
-                            const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-                                               'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-                            
-                            const monthIndex = parseInt(month) - 1;
-                            const monthName = monthNames[monthIndex];
-                            const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-                            
-                            // Calcular día de la semana manualmente (aproximado)
-                            const dateObj = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
-                            const dayName = dayNames[dateObj.getDay()];
-                            
-                            return `${dayName}, ${monthName} ${parseInt(day)}, ${year}`;
-                          }
-                          return 'Invalid Date';
-                        };
-                        
-                        return (
-                          <option key={date} value={date}>
-                            {formatSafeDate(date)}
-                          </option>
-                        );
-                      })}
-                    </select>
+
                   </div>
                   <textarea
                     value={editingTask.description}
                     onChange={(e) => setEditingTask({...editingTask, description: e.target.value})}
                     className={styles.textarea}
                     placeholder="Task description"
+                    maxLength={500}
                   />
                   <div className={styles.checkboxRow}>
                     <label 
@@ -1193,15 +1181,129 @@ const StructuredEntryForm = ({ selectedDate, onSave, existingData = null, onActi
                   </div>
                   
                   <div className={styles.formButtons}>
-                    <button onClick={(e) => {
-                      e.stopPropagation();
-                      saveEditingTask();
-                    }} className={styles.saveButton}>Save</button>
-                    <button onClick={(e) => {
-                      e.stopPropagation();
-                      cancelEditingTask();
-                    }} className={styles.cancelButton}>Cancel</button>
+                    <div className={styles.leftButtons}>
+                      <button onClick={(e) => {
+                        e.stopPropagation();
+                        saveEditingTask();
+                      }} className={styles.saveButton}>Save</button>
+                      <button onClick={(e) => {
+                        e.stopPropagation();
+                        cancelEditingTask();
+                      }} className={styles.cancelButton}>Cancel</button>
+                    </div>
+                    <div className={styles.rightButtons}>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setShowMoveCalendar(true);
+                        }}
+                        className={styles.cancelButton}
+                      >
+                        📅 Move to date
+                      </button>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setShowCopyCalendar(true);
+                        }}
+                        className={styles.cancelButton}
+                      >
+                        📋 Copy to date
+                      </button>
+                    </div>
                   </div>
+                  
+                  {showMoveCalendar && (
+                    <div style={{
+                      position: 'fixed',
+                      zIndex: 1000,
+                      background: 'var(--bg-primary)',
+                      border: '1px solid var(--border-color)',
+                      borderRadius: '8px',
+                      padding: '10px',
+                      boxShadow: '0 4b 12px var(--shadow-light)',
+                      top: '50%',
+                      left: '50%',
+                      transform: 'translate(-50%, -50%)',
+                      maxHeight: '90vh',
+                      overflow: 'auto'
+                    }}>
+                      <Calendar
+                        value={selectedDate}
+                        onChange={(date) => {
+                          // Formatear fecha sin problemas de timezone
+                          const year = date.getFullYear();
+                          const month = String(date.getMonth() + 1).padStart(2, '0');
+                          const day = String(date.getDate()).padStart(2, '0');
+                          const formattedDate = `${year}-${month}-${day}`;
+                          moveTaskToDate(editingTask, formattedDate);
+                          setShowMoveCalendar(false);
+                        }}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowMoveCalendar(false)}
+                        style={{
+                          marginTop: '10px',
+                          padding: '5px 10px',
+                          background: 'var(--bg-secondary)',
+                          border: '1px solid var(--border-color)',
+                          borderRadius: '4px',
+                          cursor: 'pointer',
+                          width: '100%'
+                        }}
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  )}
+                  
+                  {showCopyCalendar && (
+                    <div style={{
+                      position: 'fixed',
+                      zIndex: 1000,
+                      background: 'var(--bg-primary)',
+                      border: '1px solid var(--border-color)',
+                      borderRadius: '8px',
+                      padding: '10px',
+                      boxShadow: '0 4px 12px var(--shadow-light)',
+                      top: '50%',
+                      left: '50%',
+                      transform: 'translate(-50%, -50%)',
+                      maxHeight: '90vh',
+                      overflow: 'auto'
+                    }}>
+                      <Calendar
+                        value={selectedDate}
+                        onChange={(date) => {
+                          // Formatear fecha sin problemas de timezone
+                          const year = date.getFullYear();
+                          const month = String(date.getMonth() + 1).padStart(2, '0');
+                          const day = String(date.getDate()).padStart(2, '0');
+                          const formattedDate = `${year}-${month}-${day}`;
+                          copyTaskToDate(editingTask, formattedDate);
+                          setShowCopyCalendar(false);
+                        }}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowCopyCalendar(false)}
+                        style={{
+                          marginTop: '10px',
+                          padding: '5px 10px',
+                          background: 'var(--bg-secondary)',
+                          border: '1px solid var(--border-color)',
+                          borderRadius: '4px',
+                          cursor: 'pointer',
+                          width: '100%'
+                        }}
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  )}
                 </div>
               ) : (
                 // Modo visualización
@@ -1272,8 +1374,9 @@ const StructuredEntryForm = ({ selectedDate, onSave, existingData = null, onActi
               value={newNote.content}
               onChange={(e) => setNewNote({...newNote, content: e.target.value})}
               className={noteErrors.content ? styles.textareaError : styles.textarea}
+              maxLength={1000}
             />
-            <div className={styles.formButtons}>
+            <div className={styles.simpleButtons}>
               <button onClick={handleSaveNote} className={styles.saveButton}>Save</button>
               <button onClick={() => {
                 setShowNoteForm(false);
@@ -1295,8 +1398,9 @@ const StructuredEntryForm = ({ selectedDate, onSave, existingData = null, onActi
                     onChange={(e) => setEditingNote({...editingNote, content: e.target.value})}
                     className={editNoteErrors.content ? styles.textareaError : styles.textarea}
                     placeholder="Note content"
+                    maxLength={1000}
                   />
-                  <div className={styles.formButtons}>
+                  <div className={styles.simpleButtons}>
                     <button onClick={(e) => {
                       e.stopPropagation();
                       saveEditingNote();

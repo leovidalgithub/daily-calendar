@@ -27,13 +27,14 @@ export class Note {
 }
 
 export class Meeting {
-  constructor(id = null, title = '', duration = '', description = '', timeSubmitted = false) {
+  constructor(id = null, title = '', duration = '', description = '', timeSubmitted = false, departmentId = 'it-21') {
     this.id = id || Date.now() + Math.random(); // ID único
     this.type = 'MEETING';
     this.title = title; // ej: "Scrum meeting", "Call with Sonia"
     this.duration = duration; // ej: "30m", "15m"
     this.description = description;
     this.timeSubmitted = timeSubmitted; // Si el tiempo fue submiteado a DevOps
+    this.departmentId = departmentId; // ej: "it-21"
   }
 
   // Validar formato de duración (ej: "30m", "1h30m", "45m")
@@ -71,13 +72,14 @@ export class Meeting {
       title: this.title,
       duration: this.duration,
       description: this.description,
-      timeSubmitted: this.timeSubmitted
+      timeSubmitted: this.timeSubmitted,
+      departmentId: this.departmentId
     };
   }
 
   // Crear desde objeto de BD
   static fromJSON(data) {
-    return new Meeting(data.id, data.title, data.duration, data.description, data.timeSubmitted || false);
+    return new Meeting(data.id, data.title, data.duration, data.description, data.timeSubmitted || false, data.departmentId || 'it-21');
   }
 }
 

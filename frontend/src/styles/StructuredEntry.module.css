@@ -251,8 +251,25 @@
 
 .formButtons {
   display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 10px;
+}
+
+.simpleButtons {
+  display: flex;
   gap: 10px;
   margin-top: 10px;
+}
+
+.leftButtons {
+  display: flex;
+  gap: 10px;
+}
+
+.rightButtons {
+  display: flex;
+  gap: 10px;
 }
 
 .saveButton {

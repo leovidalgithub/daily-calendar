@@ -17,7 +17,6 @@ export const getTaskAnalytics = async (taskId) => {
     const data = await response.json();
     return data;
   } catch (error) {
-    console.error('Error fetching task analytics:', error);
     return null;
   }
 };
@@ -46,7 +45,6 @@ export const getMultipleTaskAnalytics = async (taskIds) => {
     
     return results;
   } catch (error) {
-    console.error('Error fetching multiple task analytics:', error);
     return {};
   }
 };

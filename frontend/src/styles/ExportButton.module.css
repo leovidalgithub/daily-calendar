@@ -1,0 +1,44 @@
+/* ExportButton.module.css */
+.exportButton {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background: var(--bg-primary);
+  border: 2px solid var(--border-color);
+  border-radius: 50px;
+  padding: 12px 20px;
+  font-size: 0.9em;
+  font-weight: 600;
+  color: var(--text-primary);
+  cursor: pointer;
+  box-shadow: 0 4px 12px var(--shadow-light);
+  transition: all 0.3s ease;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.exportButton:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px var(--shadow-medium);
+  background: var(--bg-secondary);
+  border-color: #2196F3;
+}
+
+.exportButton:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 8px var(--shadow-light);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .exportButton {
+    bottom: 80px;
+    right: 15px;
+    padding: 10px 16px;
+    font-size: 0.85em;
+  }
+}

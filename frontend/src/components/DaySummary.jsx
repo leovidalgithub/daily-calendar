@@ -8,13 +8,6 @@ const DaySummary = ({ selectedDate, dayEntry }) => {
     return null;
   }
 
-  // Debug: Ver qué datos estamos recibiendo
-  console.log('=== DEBUG DaySummary ===');
-  console.log('dayEntry received:', dayEntry);
-  console.log('meetings:', dayEntry?.meetings);
-  console.log('tasks:', dayEntry?.tasks);
-  console.log('notes:', dayEntry?.notes);
-
   // Formatear la fecha para mostrar
   const formatDate = (date) => {
     return date.toLocaleDateString('en-US', {
