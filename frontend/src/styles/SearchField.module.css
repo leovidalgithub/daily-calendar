@@ -29,7 +29,7 @@
 }
 
 .searchInput::placeholder {
-  color: #9ca3af;
+  color: var(--text-muted);
 }
 
 .clearButton {
@@ -39,7 +39,7 @@
   transform: translateY(-50%);
   background: none;
   border: none;
-  color: #6b7280;
+  color: var(--text-secondary);
   cursor: pointer;
   font-size: 14px;
   padding: 4px;
@@ -48,8 +48,8 @@
 }
 
 .clearButton:hover {
-  background: #f3f4f6;
-  color: #374151;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
 }
 
 .searchingIndicator {
@@ -120,10 +120,10 @@
 }
 
 .modalCloseButton {
-  background: #f9fafb !important;
-  border: 1px solid #e5e7eb !important;
+  background: var(--bg-secondary) !important;
+  border: 1px solid var(--border-color) !important;
   font-size: 18px !important;
-  color: #6b7280 !important;
+  color: var(--text-secondary) !important;
   cursor: pointer !important;
   padding: 6px 8px !important;
   border-radius: 6px !important;
@@ -132,17 +132,17 @@
 }
 
 .modalCloseButton:hover {
-  background: #f3f4f6 !important;
-  color: #374151 !important;
-  border-color: #d1d5db !important;
+  background: var(--border-hover) !important;
+  color: var(--text-primary) !important;
+  border-color: var(--border-hover) !important;
 }
 
 .modalBody {
   flex: 1 !important;
   overflow-y: auto !important;
   padding: 16px 0 24px 0 !important;
-  background: #ffffff !important;
-  background-color: #ffffff !important;
+  background: var(--bg-primary) !important;
+  background-color: var(--bg-primary) !important;
   border-radius: 0 0 12px 12px !important;
   position: relative !important;
   z-index: 10001 !important;
@@ -152,38 +152,38 @@
 .noResults {
   text-align: center;
   padding: 40px 24px;
-  color: #6b7280;
+  color: var(--text-secondary);
   font-size: 16px;
 }
 
 .resultsList {
   padding: 0 24px 16px 24px !important;
-  background: #ffffff !important;
-  background-color: #ffffff !important;
+  background: var(--bg-primary) !important;
+  background-color: var(--bg-primary) !important;
 }
 
 .resultItem {
   padding: 16px !important;
-  border: 1px solid #e9ecef !important;
+  border: 1px solid var(--border-color) !important;
   cursor: pointer !important;
   transition: all 0.3s ease !important;
   border-radius: 8px !important;
   margin-bottom: 8px !important;
-  background: #ffffff !important;
-  background-color: #ffffff !important;
+  background: var(--bg-secondary) !important;
+  background-color: var(--bg-secondary) !important;
   position: relative !important;
   opacity: 1 !important;
 }
 
 .resultItem:hover {
-  background: #f0f8ff !important;
+  background: var(--bg-primary) !important;
   border-color: #1976d2 !important;
   box-shadow: 0 4px 12px rgba(25, 118, 210, 0.2) !important;
   transform: translateY(-2px) !important;
 }
 
 .resultItem:last-child {
-  border-bottom: 1px solid #e9ecef !important;
+  border-bottom: 1px solid var(--border-color) !important;
   margin-bottom: 8px !important;
 }
 
@@ -198,30 +198,31 @@
   font-size: 16px;
   width: 20px;
   text-align: center;
+  color: var(--text-primary);
 }
 
 .resultType {
   font-weight: 600;
-  color: #374151;
+  color: var(--text-primary);
   font-size: 14px;
 }
 
 .resultDate {
-  color: #6b7280;
+  color: var(--text-secondary);
   font-size: 13px;
   margin-left: auto;
   font-weight: 500;
 }
 
 .resultPreview {
-  color: #1f2937;
+  color: var(--text-primary);
   font-size: 14px;
   line-height: 1.5;
   margin-bottom: 4px;
 }
 
 .resultMeta {
-  color: #6b7280;
+  color: var(--text-secondary);
   font-size: 12px;
   font-weight: 500;
 }
