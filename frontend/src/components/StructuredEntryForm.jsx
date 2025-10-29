@@ -999,6 +999,7 @@ const StructuredEntryForm = ({ selectedDate, onSave, existingData = null, onActi
                 <>
                   <div className={styles.entryHeader}>
                     <span className={styles.entryTitle}>🤝 {meeting.title}</span>
+                    <span className={styles.department}>{meeting.departmentId}</span>
                     <span className={styles.duration}>
                       ({meeting.duration}) {meeting.timeSubmitted ? '✅' : '⏱️'}
                     </span>

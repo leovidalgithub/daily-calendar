@@ -261,6 +261,9 @@
   .formButtons {
     grid-template-columns: 1fr;
     gap: 15px;
+    display: flex;
+    flex-direction: column-reverse;
+    align-items: flex-start;
   }
 }
 
