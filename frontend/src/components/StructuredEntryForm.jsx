@@ -911,12 +911,26 @@ const StructuredEntryForm = ({ selectedDate, onSave, existingData = null, onActi
 
         {/* Lista de meetings existentes */}
         <div className={styles.entries}>
-          {dayEntry.meetings.map((meeting) => (
+          {[...dayEntry.meetings]
+            .sort((a, b) => {
+              // Sort by timeSubmitted: meetings with time submitted appear first
+              if (a.timeSubmitted && !b.timeSubmitted) return -1;
+              if (!a.timeSubmitted && b.timeSubmitted) return 1;
+              return 0; // Keep original order for meetings with same timeSubmitted status
+            })
+            .map((meeting) => {
+              // Determinar clases CSS según estado
+              const isEditing = editingMeeting && editingMeeting.id === meeting.id;
+              const baseClass = isEditing ? styles.entry : styles.entryClickable;
+              const stateClass = meeting.timeSubmitted ? styles.meetingSubmitted : '';
+              const className = `${baseClass} ${stateClass}`.trim();
+              
+              return (
             <div 
               key={meeting.id} 
-              className={editingMeeting && editingMeeting.id === meeting.id ? styles.entry : styles.entryClickable}
-              onClick={editingMeeting && editingMeeting.id === meeting.id ? undefined : () => startEditingMeeting(meeting)}
-              title={editingMeeting && editingMeeting.id === meeting.id ? "" : "Click to edit meeting"}
+              className={className}
+              onClick={isEditing ? undefined : () => startEditingMeeting(meeting)}
+              title={isEditing ? "" : "Click to edit meeting"}
             >
               {editingMeeting && editingMeeting.id === meeting.id ? (
                 // Modo edición
@@ -1020,7 +1034,8 @@ const StructuredEntryForm = ({ selectedDate, onSave, existingData = null, onActi
                 </>
               )}
             </div>
-          ))}
+          );
+            })}
         </div>
       </div>
 
@@ -1063,7 +1078,15 @@ const StructuredEntryForm = ({ selectedDate, onSave, existingData = null, onActi
               <select
                 ref={newTaskStatusRef}
                 value={newTask.status}
-                onChange={(e) => setNewTask({...newTask, status: e.target.value})}
+                onChange={(e) => {
+                  const newStatus = e.target.value;
+                  setNewTask({
+                    ...newTask, 
+                    status: newStatus,
+                    // If status is not DONE, disable timeSubmitted
+                    timeSubmitted: newStatus === 'DONE' ? newTask.timeSubmitted : false
+                  });
+                }}
                 className={styles.select}
               >
                 {taskStatuses.map(status => (
@@ -1103,13 +1126,19 @@ const StructuredEntryForm = ({ selectedDate, onSave, existingData = null, onActi
             <div className={styles.checkboxRow}>
               <label 
                 className={styles.checkbox}
-                title={!newTask.duration || newTask.duration === '' ? 'You must select a duration first' : ''}
+                title={
+                  !newTask.duration || newTask.duration === '' 
+                    ? 'You must select a duration first' 
+                    : newTask.status !== 'DONE'
+                    ? 'You must set status to DONE first'
+                    : ''
+                }
               >
                 <input
                   ref={newTaskTimeSubmittedRef}
                   type="checkbox"
                   checked={newTask.timeSubmitted}
-                  disabled={!newTask.duration || newTask.duration === ''}
+                  disabled={!newTask.duration || newTask.duration === '' || newTask.status !== 'DONE'}
                   onChange={(e) => setNewTask({...newTask, timeSubmitted: e.target.checked})}
                 />
                 <span className={styles.checkboxLabel}>Time submitted to DevOps</span>
@@ -1127,12 +1156,40 @@ const StructuredEntryForm = ({ selectedDate, onSave, existingData = null, onActi
 
         {/* Lista de tasks existentes */}
         <div className={styles.entries}>
-          {dayEntry.tasks.map((task, taskIndex) => (
+          {[...dayEntry.tasks]
+            .sort((a, b) => {
+              // Priority 1: Sort by status - DONE tasks first
+              if (a.status === 'DONE' && b.status !== 'DONE') return -1;
+              if (a.status !== 'DONE' && b.status === 'DONE') return 1;
+              
+              // Priority 2: Within same status, sort by timeSubmitted
+              if (a.timeSubmitted && !b.timeSubmitted) return -1;
+              if (!a.timeSubmitted && b.timeSubmitted) return 1;
+              
+              return 0; // Keep original order for tasks with same status and timeSubmitted
+            })
+            .map((task, taskIndex) => {
+              // Determinar clases CSS según estado
+              const isEditing = editingTask && editingTask.id === task.id;
+              const baseClass = isEditing ? styles.entry : styles.entryClickable;
+              let stateClass = '';
+              
+              // Solo aplicar estilos especiales a tasks DONE
+              if (task.status === 'DONE' && task.timeSubmitted) {
+                stateClass = styles.taskDoneSubmitted; // Borde verde
+              } else if (task.status === 'DONE' && !task.timeSubmitted) {
+                stateClass = styles.taskDoneNotSubmitted; // Borde azul
+              }
+              // Task NO DONE → sin clase especial (NORMAL)
+              
+              const className = `${baseClass} ${stateClass}`.trim();
+              
+              return (
             <div 
               key={task.id} 
-              className={editingTask && editingTask.id === task.id ? styles.entry : styles.entryClickable}
-              onClick={editingTask && editingTask.id === task.id ? undefined : () => handleTaskClick(task)}
-              title={editingTask && editingTask.id === task.id ? "" : "Click to edit task | Double-click to copy Task ID"}
+              className={className}
+              onClick={isEditing ? undefined : () => handleTaskClick(task)}
+              title={isEditing ? "" : "Click to edit task | Double-click to copy Task ID"}
             >
               {editingTask && editingTask.id === task.id ? (
                 // Modo edición
@@ -1158,7 +1215,15 @@ const StructuredEntryForm = ({ selectedDate, onSave, existingData = null, onActi
                     </select>
                     <select
                       value={editingTask.status}
-                      onChange={(e) => setEditingTask({...editingTask, status: e.target.value})}
+                      onChange={(e) => {
+                        const newStatus = e.target.value;
+                        setEditingTask({
+                          ...editingTask, 
+                          status: newStatus,
+                          // If status is not DONE, disable timeSubmitted
+                          timeSubmitted: newStatus === 'DONE' ? editingTask.timeSubmitted : false
+                        });
+                      }}
                       className={styles.select}
                     >
                       {taskStatuses.map(status => (
@@ -1197,12 +1262,18 @@ const StructuredEntryForm = ({ selectedDate, onSave, existingData = null, onActi
                   <div className={styles.checkboxRow}>
                     <label 
                       className={styles.checkbox}
-                      title={!editingTask.duration || editingTask.duration === '' ? 'You must select a duration first' : ''}
+                      title={
+                        !editingTask.duration || editingTask.duration === '' 
+                          ? 'You must select a duration first' 
+                          : editingTask.status !== 'DONE'
+                          ? 'You must set status to DONE first'
+                          : ''
+                      }
                     >
                       <input
                         type="checkbox"
                         checked={editingTask.timeSubmitted}
-                        disabled={!editingTask.duration || editingTask.duration === ''}
+                        disabled={!editingTask.duration || editingTask.duration === '' || editingTask.status !== 'DONE'}
                         onChange={(e) => setEditingTask({...editingTask, timeSubmitted: e.target.checked})}
                       />
                       <span className={styles.checkboxLabel}>Time submitted to DevOps</span>
@@ -1378,7 +1449,8 @@ const StructuredEntryForm = ({ selectedDate, onSave, existingData = null, onActi
                 </>
               )}
             </div>
-          ))}
+          );
+            })}
         </div>
       </div>
 

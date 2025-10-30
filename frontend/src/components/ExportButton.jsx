@@ -21,99 +21,65 @@ const ExportButton = () => {
     try {
       toast.loading('Generating export file...', { id: 'export' });
       
-      // Primero obtener la lista de fechas
-      const response = await fetch(`${API_BASE_URL}/entries`);
+      // Obtener todas las entradas con contenido en una sola petición
+      const response = await fetch(`${API_BASE_URL}/export`);
       if (!response.ok) {
-        throw new Error('Failed to fetch dates');
+        throw new Error('Failed to fetch export data');
       }
       
       const data = await response.json();
-      
       const entries = data.entries || [];
       
-      // Ordenar por fecha
-      entries.sort((a, b) => new Date(a.date) - new Date(b.date));
+      if (entries.length === 0) {
+        toast.error('No data found to export', { id: 'export' });
+        return;
+      }
       
       let exportText = '';
       
       for (const entry of entries) {
-        // Obtener datos específicos de cada día
-        try {
-          const dayResponse = await fetch(`${API_BASE_URL}/entry/${entry.date}`);
-          if (!dayResponse.ok) {
-            continue;
+        const structuredData = entry.structured_entries;
+        const meetings = structuredData.meetings || [];
+        const tasks = structuredData.tasks || [];
+        const notes = structuredData.notes || [];
+        
+        // Línea separadora
+        exportText += '----------------------------------------------------------------------------------------------------\n';
+        exportText += `${formatDate(entry.date)}\n\n`;
+        
+        // Meetings
+        meetings.forEach(meeting => {
+          const deptId = meeting.departmentId || 'it-21';
+          const suffix = meeting.timeSubmitted ? '' : '***';
+          exportText += `${meeting.title} ${formatDuration(meeting.duration, meeting.timeSubmitted)}${suffix} ${deptId}\n`;
+          if (meeting.description && meeting.description.trim()) {
+            // Reemplazar saltos de línea por saltos de línea con tab para mantener indentación
+            const indentedDescription = meeting.description.replace(/\n/g, '\n\t');
+            exportText += `\t${indentedDescription}\n`;
           }
-          
-          const dayData = await dayResponse.json();
-          
-          if (!dayData.structured_entries) {
-            continue;
-          }
-          
-          let structuredData;
-          try {
-            structuredData = typeof dayData.structured_entries === 'string' 
-              ? JSON.parse(dayData.structured_entries) 
-              : dayData.structured_entries;
-          } catch (e) {
-            continue;
-          }
-          
-          const meetings = structuredData.meetings || [];
-          const tasks = structuredData.tasks || [];
-          const notes = structuredData.notes || [];
-          
-          // Solo incluir días que tienen datos
-          if (meetings.length === 0 && tasks.length === 0 && notes.length === 0) {
-            continue;
-          }
-          
-          // Línea separadora
-          exportText += '----------------------------------------------------------------------------------------------------\n';
-          exportText += `${formatDate(entry.date)}\n\n`;
-          
-          // Meetings
-          meetings.forEach(meeting => {
-            const deptId = meeting.departmentId || 'it-21';
-            const suffix = meeting.timeSubmitted ? '' : '***';
-            exportText += `${meeting.title} ${formatDuration(meeting.duration, meeting.timeSubmitted)}${suffix} ${deptId}\n`;
-            if (meeting.description && meeting.description.trim()) {
-              // Reemplazar saltos de línea por saltos de línea con tab para mantener indentación
-              const indentedDescription = meeting.description.replace(/\n/g, '\n\t');
-              exportText += `\t${indentedDescription}\n`;
-            }
-          });
-          
-          // Agregar línea en blanco después de meetings si hay tasks o notes
-          if (meetings.length > 0 && (tasks.length > 0 || notes.length > 0)) {
-            exportText += '\n';
-          }
-          
-          // Tasks
-          tasks.forEach(task => {
-            const statusIcon = task.status === 'DONE' ? '<done>' : '';
-            exportText += `${task.taskId} ${task.department} ${formatDuration(task.duration, task.timeSubmitted)} ${statusIcon}\n`;
-            if (task.description) {
-              // Reemplazar saltos de línea por saltos de línea con tab para mantener indentación
-              const indentedDescription = task.description.replace(/\n/g, '\n\t');
-              exportText += `\t${indentedDescription}\n`;
-            }
-            exportText += '\n';
-          });
-          
-          // Notes
-          notes.forEach(note => {
-            exportText += `${note.content}\n\n`;
-          });
-          
-        } catch (dayError) {
-          // Skip this entry on error
+        });
+        
+        // Agregar línea en blanco después de meetings si hay tasks o notes
+        if (meetings.length > 0 && (tasks.length > 0 || notes.length > 0)) {
+          exportText += '\n';
         }
-      }
-      
-      if (exportText.length === 0) {
-        toast.error('No data found to export', { id: 'export' });
-        return;
+        
+        // Tasks
+        tasks.forEach(task => {
+          const statusIcon = task.status === 'DONE' ? '<done>' : '';
+          exportText += `${task.taskId} ${task.department} ${formatDuration(task.duration, task.timeSubmitted)} ${statusIcon}\n`;
+          if (task.description) {
+            // Reemplazar saltos de línea por saltos de línea con tab para mantener indentación
+            const indentedDescription = task.description.replace(/\n/g, '\n\t');
+            exportText += `\t${indentedDescription}\n`;
+          }
+          exportText += '\n';
+        });
+        
+        // Notes
+        notes.forEach(note => {
+          exportText += `${note.content}\n\n`;
+        });
       }
       
       // Crear y descargar archivo

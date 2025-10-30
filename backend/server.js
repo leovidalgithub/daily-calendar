@@ -223,6 +223,51 @@ app.get("/api/entries", checkDatabaseConnection, async (req, res) => {
   }
 });
 
+// GET /api/export - Obtener todas las entradas con contenido completo para exportar
+app.get("/api/export", checkDatabaseConnection, async (req, res) => {
+  try {
+    // Usar DATE_FORMAT para evitar problemas de timezone
+    const [rows] = await db.execute(
+      "SELECT DATE_FORMAT(entry_date, '%Y-%m-%d') as entry_date, structured_entries FROM daily_entries WHERE structured_entries IS NOT NULL ORDER BY entry_date ASC"
+    );
+
+    const entries = rows.map((row) => {
+      let structuredData = null;
+      
+      // Parse JSON si es necesario
+      if (row.structured_entries) {
+        try {
+          structuredData = typeof row.structured_entries === 'string' 
+            ? JSON.parse(row.structured_entries) 
+            : row.structured_entries;
+        } catch (error) {
+          console.error(`Error parsing structured_entries for date ${row.entry_date}:`, error);
+        }
+      }
+
+      return {
+        date: row.entry_date, // Ahora es string YYYY-MM-DD, no Date object
+        structured_entries: structuredData
+      };
+    });
+
+    // Filtrar entradas que tienen datos válidos
+    const validEntries = entries.filter(entry => {
+      if (!entry.structured_entries) return false;
+      const { meetings = [], tasks = [], notes = [] } = entry.structured_entries;
+      return meetings.length > 0 || tasks.length > 0 || notes.length > 0;
+    });
+
+    res.json({
+      entries: validEntries,
+      count: validEntries.length
+    });
+  } catch (error) {
+    console.error("Error fetching export data:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 // Task analytics endpoint - obtener estadísticas de un Task ID específico
 app.get("/api/task-analytics/:taskId", checkDatabaseConnection, async (req, res) => {
   try {

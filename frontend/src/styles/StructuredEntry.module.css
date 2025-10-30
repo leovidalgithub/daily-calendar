@@ -574,3 +574,46 @@
   background: #45a049;
   opacity: 1;
 }
+
+/* ============================================
+   ESTILOS PARA ELEMENTOS COMPLETADOS/SUBMITTED
+   ============================================ */
+
+/* Meeting con timeSubmitted: true */
+.entryClickable.meetingSubmitted {
+  border-left: 4px solid #4caf50 !important;
+}
+
+.entryClickable.meetingSubmitted:hover {
+  border: 1px solid #4caf50 !important;
+}
+
+.entry.meetingSubmitted {
+  border-left: 4px solid #4caf50 !important;
+}
+
+/* Task DONE con timeSubmitted: true */
+.entryClickable.taskDoneSubmitted {
+  border-left: 4px solid #4caf50 !important;
+}
+
+.entryClickable.taskDoneSubmitted:hover {
+  border: 1px solid #4caf50 !important;
+}
+
+.entry.taskDoneSubmitted {
+  border-left: 4px solid #4caf50 !important;
+}
+
+/* Task DONE sin timeSubmitted */
+.entryClickable.taskDoneNotSubmitted {
+  border-left: 4px solid #007bff !important;
+}
+
+.entryClickable.taskDoneNotSubmitted:hover {
+  border: 1px solid #007bff !important;
+}
+
+.entry.taskDoneNotSubmitted {
+  border-left: 4px solid #007bff !important;
+}
