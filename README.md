@@ -10,6 +10,7 @@ Una aplicación web para guardar y organizar notas diarias con calendario intera
 - ✅ **Base de datos MySQL** para persistencia
 - ✅ **Diseño responsive** para móvil y desktop
 - ✅ **API REST** completa
+- 🔒 **Protección por contraseña** simple y segura
 
 ## 🛠️ Tecnologías
 
@@ -51,7 +52,7 @@ cd server
 npm install
 ```
 
-### 3. Configurar base de datos
+### 3. Configurar base de datos y autenticación
 
 1. Crear base de datos en MySQL
 2. Ejecutar el script `server/database.sql`
@@ -64,7 +65,10 @@ DB_PASSWORD=tu_password
 DB_NAME=daily_calendar
 DB_PORT=3306
 PORT=3001
+APP_PASSWORD=tu_password_seguro
 ```
+
+**🔒 Importante:** `APP_PASSWORD` es la contraseña para acceder a la aplicación.
 
 ### 4. Ejecutar la aplicación
 
@@ -109,11 +113,21 @@ Subir la carpeta `server/` con las variables de entorno configuradas.
 
 ## 📝 Uso
 
-1. **Selecciona una fecha** en el calendario
-2. **Escribe tus notas** en el editor de texto
-3. **Usa los botones de formato** para dar estilo al texto
-4. **Haz clic en Guardar** para persistir el contenido
-5. **Navega entre fechas** para ver tus notas anteriores
+1. **Introduce la contraseña** cuando se te pida (primera vez)
+2. **Selecciona una fecha** en el calendario
+3. **Escribe tus notas** en el editor de texto
+4. **Usa los botones de formato** para dar estilo al texto
+5. **Haz clic en Guardar** para persistir el contenido
+6. **Navega entre fechas** para ver tus notas anteriores
+7. **Cierra sesión** con el botón 🔓 Logout (esquina superior derecha)
+
+### 🔒 Seguridad
+
+- La sesión permanece activa durante 7 días
+- La contraseña se valida en el servidor (backend)
+- El token se almacena de forma segura en localStorage
+- Cierra sesión si usas un dispositivo compartido
+- **Nunca compartas tu APP_PASSWORD**
 
 ## 🤝 Contribuir
 

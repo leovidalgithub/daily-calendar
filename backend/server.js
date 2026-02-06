@@ -92,6 +92,52 @@ const checkDatabaseConnection = (req, res, next) => {
   next();
 };
 
+// Authentication endpoint
+app.post('/api/auth', (req, res) => {
+  try {
+    const { password } = req.body;
+    
+    if (!password) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Password is required' 
+      });
+    }
+    
+    const appPassword = process.env.APP_PASSWORD;
+    
+    if (!appPassword) {
+      console.error('APP_PASSWORD not configured in environment variables');
+      return res.status(500).json({ 
+        success: false, 
+        message: 'Server configuration error' 
+      });
+    }
+    
+    if (password === appPassword) {
+      // Generate a simple token (in production, use JWT or similar)
+      const token = Buffer.from(`${password}:${Date.now()}`).toString('base64');
+      
+      res.json({ 
+        success: true, 
+        message: 'Authentication successful',
+        token: token
+      });
+    } else {
+      res.status(401).json({ 
+        success: false, 
+        message: 'Incorrect password' 
+      });
+    }
+  } catch (error) {
+    console.error('Auth error:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Internal server error' 
+    });
+  }
+});
+
 // Rutas de la API
 
 // GET /api/entry/:date - Obtener entrada para una fecha específica

@@ -6,6 +6,7 @@ import DaySummary from "./components/DaySummary";
 import ThemeToggle from "./components/ThemeToggle";
 import ExportButton from "./components/ExportButton";
 import VersionInfo from "./components/VersionInfo";
+import AuthGuard from "./components/AuthGuard";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { API_BASE_URL } from "./config/api";
 import { Toaster } from 'react-hot-toast';
@@ -196,17 +197,18 @@ function App() {
 
   return (
     <ThemeProvider>
-      <div className="app">
-        <ThemeToggle />
-        <main className="app-main">
-          <div className="app-grid">
-            <div className="left-panel">
-              <header className="app-header">
-                <h1>📅 Daily Calendar</h1>
-              </header>
+      <AuthGuard>
+        <div className="app">
+          <ThemeToggle />
+          <main className="app-main">
+            <div className="app-grid">
+              <div className="left-panel">
+                <header className="app-header">
+                  <h1>📅 Daily Calendar</h1>
+                </header>
 
-              <div className="calendar-section">
-                <CalendarComponent
+                <div className="calendar-section">
+                  <CalendarComponent
                   selectedDate={selectedDate}
                   onDateChange={handleDateChange}
                 />
@@ -265,6 +267,7 @@ function App() {
         <ExportButton />
         <VersionInfo />
       </div>
+      </AuthGuard>
     </ThemeProvider>
   );
 }
