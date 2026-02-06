@@ -38,6 +38,8 @@ jobs:
           source: "frontend/dist/*"
           target: "/home/leovidal/repositories/daily-calendar/dist/"
           strip_components: 2
+          timeout: 2m
+          command_timeout: 15m
 
       - name: Deploy backend to API subdomain
         uses: appleboy/scp-action@v0.1.7
@@ -50,6 +52,8 @@ jobs:
           source: "backend/*"
           target: "/home/leovidal/repositories/daily-calendar/"
           strip_components: 1
+          timeout: 2m
+          command_timeout: 15m
 
       - name: Install backend dependencies and restart
         uses: appleboy/ssh-action@v0.1.8
@@ -59,6 +63,8 @@ jobs:
           port: 17177
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           passphrase: ${{ secrets.SSH_PASSPHRASE }}
+          timeout: 2m
+          command_timeout: 15m
           script: |
             cd /home/leovidal/repositories/daily-calendar
             # Install backend dependencies
