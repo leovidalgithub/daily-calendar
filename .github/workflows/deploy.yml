@@ -32,7 +32,7 @@ jobs:
         with:
           host: leovidal.es
           username: leovidal
-          port: 17177
+          port: 22
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           passphrase: ${{ secrets.SSH_PASSPHRASE }}
           source: "frontend/dist/*"
@@ -46,7 +46,7 @@ jobs:
         with:
           host: leovidal.es
           username: leovidal
-          port: 17177
+          port: 22
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           passphrase: ${{ secrets.SSH_PASSPHRASE }}
           source: "backend/*"
@@ -60,7 +60,7 @@ jobs:
         with:
           host: leovidal.es
           username: leovidal
-          port: 17177
+          port: 22
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           passphrase: ${{ secrets.SSH_PASSPHRASE }}
           timeout: 2m
