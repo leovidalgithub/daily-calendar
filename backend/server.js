@@ -19,43 +19,44 @@ const corsOptions = {
 app.use(cors(corsOptions));
 app.use(express.json());
 
-// Configuración de la base de datos
+// Middleware de logging para todas las requests
+app.use((req, res, next) => {
+  console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
+  next();
+});
+
+// Configuración de la base de datos con pool y timeouts
 const dbConfig = {
   host: process.env.DB_HOST || "localhost",
   user: process.env.DB_USER || "root",
   password: process.env.DB_PASSWORD || "",
   database: process.env.DB_NAME || "daily_calendar",
   port: process.env.DB_PORT || 3306,
+  connectionLimit: 5,
+  connectTimeout: 10000,
+  waitForConnections: true,
+  queueLimit: 0
 };
 
-// Crear conexión a la base de datos
+// Crear pool de conexiones a la base de datos
 let db;
 
 async function initDatabase() {
   try {
-    db = await mysql.createConnection(dbConfig);
+    db = mysql.createPool(dbConfig);
+    console.log("✅ Database pool created");
+
+    // Probar la conexión
+    const connection = await db.getConnection();
     console.log("✅ Connected to MySQL database");
+    connection.release();
 
     // Crear la tabla si no existe
     await createTables();
   } catch (error) {
     console.error("❌ Error connecting to database:", error.message);
-    console.error("🔍 Error details:", {
-      code: error.code,
-      errno: error.errno,
-      sqlState: error.sqlState,
-      host: dbConfig.host,
-      port: dbConfig.port,
-      user: dbConfig.user,
-      database: dbConfig.database,
-    });
-    console.log(
-      "⚠️  Server will start anyway. Database functions will not work until connection is established."
-    );
-    console.log(
-      "🔄 You can try to reconnect later or check your database configuration."
-    );
-    db = null; // Asegurar que db esté en null
+    console.log("⚠️  Server will start anyway. Database functions will not work until connection is established.");
+    db = null;
   }
 }
 
@@ -165,8 +166,8 @@ app.post("/api/entry", checkDatabaseConnection, async (req, res) => {
     // Asegurar que la fecha se guarde correctamente sin zona horaria
     const [result] = await db.execute(query, [
       date, // date ya viene en formato YYYY-MM-DD del frontend
-      content || null, 
-      structuredEntriesJSON, 
+      content || null,
+      structuredEntriesJSON,
       type
     ]);
 
@@ -233,12 +234,12 @@ app.get("/api/export", checkDatabaseConnection, async (req, res) => {
 
     const entries = rows.map((row) => {
       let structuredData = null;
-      
+
       // Parse JSON si es necesario
       if (row.structured_entries) {
         try {
-          structuredData = typeof row.structured_entries === 'string' 
-            ? JSON.parse(row.structured_entries) 
+          structuredData = typeof row.structured_entries === 'string'
+            ? JSON.parse(row.structured_entries)
             : row.structured_entries;
         } catch (error) {
           console.error(`Error parsing structured_entries for date ${row.entry_date}:`, error);
@@ -272,22 +273,22 @@ app.get("/api/export", checkDatabaseConnection, async (req, res) => {
 app.get("/api/task-analytics/:taskId", checkDatabaseConnection, async (req, res) => {
   try {
     const { taskId } = req.params;
-    
+
     if (!taskId) {
       return res.status(400).json({ error: "Task ID is required" });
     }
 
     const [rows] = await db.execute("SELECT id, DATE_FORMAT(entry_date, '%Y-%m-%d') as entry_date, content, structured_entries FROM daily_entries ORDER BY entry_date ASC");
-    
+
     let allTaskOccurrences = [];
     let totalDurationMinutes = 0;
-    
+
     rows.forEach(row => {
       try {
         // Ahora entry_date viene como string puro YYYY-MM-DD desde MySQL
         const dateString = row.entry_date;
         let rawData = row.structured_entries || row.content;
-        
+
         if (!rawData || (typeof rawData === 'string' && rawData.trim() === '')) {
           return;
         }
@@ -310,7 +311,7 @@ app.get("/api/task-analytics/:taskId", checkDatabaseConnection, async (req, res)
               durationMinutes = parseDurationToMinutes(task.duration);
               totalDurationMinutes += durationMinutes;
             }
-            
+
             allTaskOccurrences.push({
               date: dateString,
               taskIndex: index,
@@ -323,7 +324,7 @@ app.get("/api/task-analytics/:taskId", checkDatabaseConnection, async (req, res)
             });
           }
         });
-        
+
       } catch (parseError) {
         console.error(`Error processing ${dateString}:`, parseError.message);
       }
@@ -331,7 +332,7 @@ app.get("/api/task-analytics/:taskId", checkDatabaseConnection, async (req, res)
 
     // Ordenar por fecha para obtener orden cronológico
     allTaskOccurrences.sort((a, b) => new Date(a.date) - new Date(b.date));
-    
+
     const totalDurationFormatted = formatMinutesToDuration(totalDurationMinutes);
 
     res.json({
@@ -347,7 +348,7 @@ app.get("/api/task-analytics/:taskId", checkDatabaseConnection, async (req, res)
       })),
       dates: [...new Set(allTaskOccurrences.map(occ => occ.date))]
     });
-    
+
   } catch (error) {
     console.error("Error getting task analytics:", error);
     res.status(500).json({ error: "Internal server error" });
@@ -358,28 +359,28 @@ app.get("/api/task-analytics/:taskId", checkDatabaseConnection, async (req, res)
 app.get("/api/search", checkDatabaseConnection, async (req, res) => {
   try {
     const { q } = req.query;
-    
+
     if (!q || q.trim().length === 0) {
       return res.json({ results: [], total: 0 });
     }
 
     const searchTerm = q.trim();
-    
+
     // Obtener todas las entradas con structured_entries
     const [rows] = await db.execute(
       "SELECT DATE_FORMAT(entry_date, '%Y-%m-%d') as entry_date, structured_entries FROM daily_entries WHERE structured_entries IS NOT NULL ORDER BY entry_date DESC"
     );
-    
+
     let searchResults = [];
-    
+
     rows.forEach(row => {
       try {
         const dateString = row.entry_date;
         let structuredData;
-        
+
         try {
-          structuredData = typeof row.structured_entries === 'string' 
-            ? JSON.parse(row.structured_entries) 
+          structuredData = typeof row.structured_entries === 'string'
+            ? JSON.parse(row.structured_entries)
             : row.structured_entries;
         } catch (jsonError) {
           return; // Skip invalid JSON
@@ -397,7 +398,7 @@ app.get("/api/search", checkDatabaseConnection, async (req, res) => {
               meeting.description || '',
               meeting.duration || ''
             ].join(' ').toLowerCase();
-            
+
             if (searchableText.includes(searchTerm.toLowerCase())) {
               searchResults.push({
                 date: dateString,
@@ -423,7 +424,7 @@ app.get("/api/search", checkDatabaseConnection, async (req, res) => {
               task.description || '',
               task.duration || ''
             ].join(' ').toLowerCase();
-            
+
             if (searchableText.includes(searchTerm.toLowerCase())) {
               searchResults.push({
                 date: dateString,
@@ -445,7 +446,7 @@ app.get("/api/search", checkDatabaseConnection, async (req, res) => {
         if (structuredData.notes && Array.isArray(structuredData.notes)) {
           structuredData.notes.forEach((note, index) => {
             const searchableText = (note.content || '').toLowerCase();
-            
+
             if (searchableText.includes(searchTerm.toLowerCase())) {
               searchResults.push({
                 date: dateString,
@@ -457,7 +458,7 @@ app.get("/api/search", checkDatabaseConnection, async (req, res) => {
             }
           });
         }
-        
+
       } catch (parseError) {
         console.error(`Error processing search for ${row.entry_date}:`, parseError.message);
       }
@@ -473,7 +474,7 @@ app.get("/api/search", checkDatabaseConnection, async (req, res) => {
       searchTerm: searchTerm,
       hasMore: searchResults.length > 50
     });
-    
+
   } catch (error) {
     console.error("Error performing search:", error);
     res.status(500).json({ error: "Internal server error" });
@@ -490,29 +491,29 @@ function truncateText(text, maxLength) {
 
 function parseDurationToMinutes(durationStr) {
   if (!durationStr || durationStr === '0') return 0;
-  
+
   let totalMinutes = 0;
-  
+
   // Match hours (e.g., "2h", "1h")
   const hoursMatch = durationStr.match(/(\d+)h/);
   if (hoursMatch) {
     totalMinutes += parseInt(hoursMatch[1]) * 60;
   }
-  
+
   const minutesMatch = durationStr.match(/(\d+)m/);
   if (minutesMatch) {
     totalMinutes += parseInt(minutesMatch[1]);
   }
-  
+
   return totalMinutes;
 }
 
 function formatMinutesToDuration(totalMinutes) {
   if (totalMinutes === 0) return '';
-  
+
   const hours = Math.floor(totalMinutes / 60);
   const minutes = totalMinutes % 60;
-  
+
   if (hours === 0) {
     return `${minutes}m`;
   } else if (minutes === 0) {
@@ -529,6 +530,10 @@ app.get("/api/health", (req, res) => {
     status: "OK",
     timestamp: new Date().toISOString(),
     database: db ? "connected" : "disconnected",
+    pid: process.pid,
+    uptime: process.uptime(),
+    cwd: process.cwd(),
+    nodeVersion: process.version,
     npmPackageTest: "npmPackageTest working correctly",
     nodeAppRestatus: "operational"
   });

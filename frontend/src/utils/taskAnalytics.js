@@ -96,9 +96,10 @@ export const processTaskStatsForDisplay = (taskAnalytics, currentDate, taskIndex
   
   const currentDateNormalized = normalizeDate(currentDate);
   
-  // Buscar la ocurrencia específica basada en fecha Y taskIndex
+  // Buscar la ocurrencia específica basada SOLO en fecha
+  // El taskIndex puede cambiar por reordenamientos, pero la fecha es única
   const currentOccurrence = taskAnalytics.occurrences.find(occ => 
-    normalizeDate(occ.date) === currentDateNormalized && occ.taskIndex === taskIndex
+    normalizeDate(occ.date) === currentDateNormalized
   );
   
   return {
