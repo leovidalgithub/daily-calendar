@@ -27,18 +27,6 @@ jobs:
           cd frontend
           npm run build
 
-      - name: Create target directory on server
-        uses: appleboy/ssh-action@v0.1.8
-        with:
-          host: leovidal.es
-          username: leovidal
-          port: 22
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          passphrase: ${{ secrets.SSH_PASSPHRASE }}
-          timeout: 2m
-          script: |
-            mkdir -p /home/leovidal/repositories/daily-calendar/dist
-
       - name: Deploy frontend to server
         uses: appleboy/scp-action@v0.1.7
         with:
