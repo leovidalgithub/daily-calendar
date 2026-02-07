@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef, forwardRef, useImperativeHandle } from 'react';
 import { createPortal } from 'react-dom';
-import { API_BASE_URL } from '../config/api';
+import { API_BASE_URL, securedFetch } from '../config/api';
 import styles from '../styles/SearchField.module.css';
 
 const SearchField = forwardRef(({ onResultSelect }, ref) => {
@@ -61,7 +61,7 @@ const SearchField = forwardRef(({ onResultSelect }, ref) => {
 
     setIsSearching(true);
     try {
-      const response = await fetch(`${API_BASE_URL}/search?q=${encodeURIComponent(term.trim())}`);
+      const response = await securedFetch(`${API_BASE_URL}/search?q=${encodeURIComponent(term.trim())}`);
       
       if (response.ok) {
         const data = await response.json();

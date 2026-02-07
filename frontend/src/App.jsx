@@ -8,7 +8,7 @@ import ExportButton from "./components/ExportButton";
 import VersionInfo from "./components/VersionInfo";
 import AuthGuard from "./components/AuthGuard";
 import { ThemeProvider } from "./contexts/ThemeContext";
-import { API_BASE_URL } from "./config/api";
+import { API_BASE_URL, securedFetch } from "./config/api";
 import { Toaster } from 'react-hot-toast';
 import "./App.css";
 
@@ -111,7 +111,7 @@ function App() {
     setIsLoading(true);
     try {
       const dateString = getLocalDateString(date); // YYYY-MM-DD format sin problemas UTC
-      const response = await fetch(`${API_BASE_URL}/entry/${dateString}`);
+      const response = await securedFetch(`${API_BASE_URL}/entry/${dateString}`);
 
       if (response.ok) {
         const data = await response.json();
@@ -142,7 +142,7 @@ function App() {
     try {
       const dateString = getLocalDateString(selectedDate);
       
-      const response = await fetch(`${API_BASE_URL}/entry`, {
+      const response = await securedFetch(`${API_BASE_URL}/entry`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

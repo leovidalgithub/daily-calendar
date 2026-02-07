@@ -1,5 +1,5 @@
 import React from 'react';
-import { API_BASE_URL } from '../config/api.js';
+import { API_BASE_URL, securedFetch } from '../config/api.js';
 import toast from 'react-hot-toast';
 import styles from '../styles/ExportButton.module.css';
 
@@ -22,7 +22,7 @@ const ExportButton = () => {
       toast.loading('Generating export file...', { id: 'export' });
       
       // Obtener todas las entradas con contenido en una sola petición
-      const response = await fetch(`${API_BASE_URL}/export`);
+      const response = await securedFetch(`${API_BASE_URL}/export`);
       if (!response.ok) {
         throw new Error('Failed to fetch export data');
       }

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import styles from '../styles/AuthGuard.module.css';
 import { getApiUrl } from '../config/api.js';
+import ThemeToggle from './ThemeToggle.jsx';
 
 const AUTH_KEY = 'daily_calendar_auth';
 const AUTH_EXPIRY_DAYS = 7;
@@ -14,6 +15,21 @@ const AuthGuard = ({ children }) => {
 
   useEffect(() => {
     checkAuthentication();
+    
+    // Listener para detectar cuando se elimina localStorage desde otro tab/ventana
+    const handleStorageChange = (e) => {
+      // Detectar si se eliminó la key de autenticación
+      if (e.key === AUTH_KEY && e.newValue === null) {
+        setIsAuthenticated(false);
+      }
+    };
+    
+    // Storage event se dispara cuando otro tab/ventana modifica localStorage
+    window.addEventListener('storage', handleStorageChange);
+    
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+    };
   }, []);
 
   const checkAuthentication = () => {
@@ -96,6 +112,7 @@ const AuthGuard = ({ children }) => {
   if (!isAuthenticated) {
     return (
       <div className={styles.authContainer}>
+        <ThemeToggle />
         <div className={styles.authCard}>
           <div className={styles.authHeader}>
             <h1>📅 Daily Calendar</h1>

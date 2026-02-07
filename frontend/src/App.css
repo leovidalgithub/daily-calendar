@@ -15,6 +15,7 @@
   --shadow-light: rgba(0, 0, 0, 0.1);
   --shadow-medium: rgba(0, 0, 0, 0.15);
   --shadow-dark: rgba(0, 0, 0, 0.2);
+  --primary-color: #667eea;
   
   /* Toggle specific */
   --toggle-bg: #f0f0f0;
@@ -37,6 +38,7 @@
   --shadow-light: rgba(0, 0, 0, 0.3);
   --shadow-medium: rgba(0, 0, 0, 0.4);
   --shadow-dark: rgba(0, 0, 0, 0.5);
+  --primary-color: #764ba2;
   
   /* Toggle specific */
   --toggle-bg: #3d3d3d;

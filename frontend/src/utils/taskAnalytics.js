@@ -1,5 +1,5 @@
 // Task Analytics Helper Functions
-import { getApiUrl } from '../config/api.js';
+import { getApiUrl, securedFetch } from '../config/api.js';
 
 /**
  * Obtiene las estadísticas de un Task ID específico desde el backend
@@ -8,7 +8,7 @@ import { getApiUrl } from '../config/api.js';
  */
 export const getTaskAnalytics = async (taskId) => {
   try {
-    const response = await fetch(getApiUrl(`/api/task-analytics/${taskId}`));
+    const response = await securedFetch(getApiUrl(`/api/task-analytics/${taskId}`));
     
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);

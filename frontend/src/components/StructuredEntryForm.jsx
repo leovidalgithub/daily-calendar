@@ -4,7 +4,7 @@ import styles from '../styles/StructuredEntry.module.css';
 import DurationSelect from './DurationSelect.jsx';
 import TaskIndicators from './TaskIndicators.jsx';
 import * as TaskAnalytics from '../utils/taskAnalytics.js';
-import { API_BASE_URL } from '../config/api.js';
+import { API_BASE_URL, securedFetch } from '../config/api.js';
 import toast from 'react-hot-toast';
 import Calendar from 'react-calendar';
 
@@ -621,7 +621,7 @@ const StructuredEntryForm = ({ selectedDate, onSave, existingData = null, onActi
       await onSave(updatedDayEntry.toJSON());
       
       // 3. Cargar la entrada del día objetivo
-      const response = await fetch(`${API_BASE_URL}/entry/${targetDate}`);
+      const response = await securedFetch(`${API_BASE_URL}/entry/${targetDate}`);
       
       let targetDayData = null;
       if (response.ok) {
@@ -648,7 +648,7 @@ const StructuredEntryForm = ({ selectedDate, onSave, existingData = null, onActi
       
       // 5. Guardar el día objetivo (usando el mismo flujo que para agregar tasks)
       // IMPORTANTE: Usar la misma lógica que App.jsx
-      const saveResponse = await fetch(`${API_BASE_URL}/entry`, {
+      const saveResponse = await securedFetch(`${API_BASE_URL}/entry`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -695,7 +695,7 @@ const StructuredEntryForm = ({ selectedDate, onSave, existingData = null, onActi
   const copyTaskToDate = async (taskToCopy, targetDate) => {
     try {
       // 1. Cargar datos del día objetivo
-      const response = await fetch(`${API_BASE_URL}/entry/${targetDate}`);
+      const response = await securedFetch(`${API_BASE_URL}/entry/${targetDate}`);
       
       let targetDayData = null;
       if (response.ok) {
@@ -721,7 +721,7 @@ const StructuredEntryForm = ({ selectedDate, onSave, existingData = null, onActi
       targetDayEntry.tasks.push(newTask);
       
       // 3. Guardar el día objetivo
-      const saveResponse = await fetch(`${API_BASE_URL}/entry`, {
+      const saveResponse = await securedFetch(`${API_BASE_URL}/entry`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
