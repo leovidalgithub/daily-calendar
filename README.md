@@ -72,17 +72,51 @@ APP_PASSWORD=tu_password_seguro
 
 ### 4. Ejecutar la aplicación
 
+#### Modo Desarrollo
+
 ```bash
 # En una terminal - Backend
-cd server
-npm start
+cd backend
+npm run dev
 
 # En otra terminal - Frontend
-cd ..
+cd frontend
 npm run dev
 ```
 
 La aplicación estará disponible en `http://localhost:5173`
+
+#### Modo Producción con PM2 (Recomendado)
+
+PM2 es un gestor de procesos para aplicaciones Node.js que mantiene tu aplicación siempre activa, recarga sin tiempo de inactividad y facilita tareas comunes de administración.
+
+```bash
+# Instalar PM2 globalmente
+npm install -g pm2
+
+# Iniciar el backend con PM2
+cd backend
+npm run pm2:start
+
+# Comandos útiles de PM2
+npm run pm2:status    # Ver estado de la aplicación
+npm run pm2:logs      # Ver logs en tiempo real
+npm run pm2:restart   # Reiniciar la aplicación
+npm run pm2:stop      # Detener la aplicación
+npm run pm2:delete    # Eliminar de PM2
+
+# O usar PM2 directamente
+pm2 list              # Listar todas las aplicaciones
+pm2 monit             # Monitor en tiempo real
+pm2 save              # Guardar lista de procesos
+```
+
+**Ventajas de PM2:**
+- ✅ Auto-restart si la app falla
+- ✅ Gestión optimizada de memoria (límite 150MB)
+- ✅ Logs centralizados
+- ✅ Ideal para hosting compartido con límites de NPROC
+- ✅ 1 solo proceso por aplicación (configurado en `ecosystem.config.cjs`)
 
 ## 📁 Estructura del Proyecto
 
@@ -101,15 +135,45 @@ daily-calendar/
 
 ## 🌐 Deployment
 
-### Frontend (Vercel/Netlify)
+### Deployment Automático con GitHub Actions
+
+Este proyecto incluye CI/CD automático. Al hacer push a `master`:
+
+1. ✅ Frontend se compila y despliega automáticamente
+2. ✅ Backend se despliega y actualiza
+3. ✅ PM2 reinicia la aplicación automáticamente
+
+### Deployment Manual
+
+#### Frontend
 
 ```bash
+cd frontend
 npm run build
+# Subir contenido de dist/ a tu servidor web
 ```
 
-### Backend (Railway/Heroku)
+#### Backend con PM2
 
-Subir la carpeta `server/` con las variables de entorno configuradas.
+```bash
+# En el servidor
+cd /ruta/al/backend
+npm install
+
+# Primera vez: iniciar con PM2
+pm2 start ecosystem.config.cjs --env production
+pm2 save
+
+# Actualizaciones: solo reiniciar
+pm2 restart daily-calendar-api
+```
+
+**Configuración PM2 en hosting compartido:**
+- El archivo `ecosystem.config.cjs` ya está optimizado
+- Usa `instances: 1` para minimizar uso de NPROC
+- Límite de memoria: 150MB
+- Auto-restart habilitado
+- Logs en `backend/logs/`
 
 ## 📝 Uso
 
