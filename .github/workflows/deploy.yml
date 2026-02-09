@@ -57,7 +57,7 @@ jobs:
           timeout: 2m
           command_timeout: 15m
 
-      - name: Install dependencies and deploy with PM2
+      - name: Install backend dependencies and restart
         uses: appleboy/ssh-action@v0.1.8
         with:
           host: leovidal.es
@@ -69,33 +69,9 @@ jobs:
           command_timeout: 15m
           script: |
             cd /home/leovidal/repositories/daily-calendar
-            
             # Install backend dependencies
             npm install
-            
-            # Install PM2 globally if not installed
-            if ! command -v pm2 &> /dev/null; then
-              echo "📦 Installing PM2..."
-              npm install -g pm2
-            else
-              echo "✅ PM2 already installed"
-            fi
-            
-            # Create logs directory if it doesn't exist
-            mkdir -p logs
-            
-            # Check if app is already running with PM2
-            if pm2 list | grep -q "daily-calendar-api"; then
-              echo "🔄 Restarting app with PM2..."
-              pm2 restart daily-calendar-api
-            else
-              echo "🚀 Starting app with PM2..."
-              pm2 start ecosystem.config.cjs --env production
-            fi
-            
-            # Save PM2 process list and setup startup script
-            pm2 save
-            
-            # Show status
-            pm2 status
-            echo "✅ Deployment completed successfully"
+            # Restart Node.js application (Cloudlinux Passenger)
+            # Touch restart.txt to trigger Passenger restart
+            touch tmp/restart.txt || mkdir -p tmp && touch tmp/restart.txt
+            echo "Node.js app restart triggered"
